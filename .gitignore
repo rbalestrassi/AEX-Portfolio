@@ -1,0 +1,29 @@
+# Sistema
+.DS_Store
+Thumbs.db
+
+# Arquivos de desenvolvimento local
+/aex-portfolio.html
+/server.py
+/test-video.html
+/netlify.toml
+/PROJETO_AEX.md
+
+# Backups gerados durante desenvolvimento
+/*.backup-before-*.html
+
+# Mídias duplicadas na raiz (versões oficiais estão em site-aex-publicacao/assets/)
+/hero-compressor.png
+/hero-caixa-wireframe.png
+/hero-caixa-colorida.png
+/hero-aex.mp4
+/aex-logo-transparent.png
+/Novo\ Hero.mp4
+/modelo\ de\ hero\ principal.png
+
+# Planilhas e arquivos de trabalho
+/*.xlsx
+
+# Pastas de ferramentas
+.netlify/
+.claude/
