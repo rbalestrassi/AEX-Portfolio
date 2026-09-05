@@ -1182,6 +1182,19 @@ const PROD_KEY = 'aex_products';
 const HERO_KEY = 'aex_hero_config';
 const FOOTER_KEY = 'aexFooterSettings';
 
+// ── Controle de versão do site ────────────────────────────────────────────────
+const SITE_VERSION = '2026-09-04';
+const VERSION_KEY  = 'aex_site_version';
+(function checkVersion(){
+  const saved = localStorage.getItem(VERSION_KEY);
+  if(saved !== SITE_VERSION){
+    localStorage.removeItem(PROD_KEY);
+    localStorage.removeItem(HERO_KEY);
+    localStorage.removeItem(FOOTER_KEY);
+    localStorage.setItem(VERSION_KEY, SITE_VERSION);
+  }
+})();
+
 // ── API de persistência no servidor ──────────────────────────────────────────
 const AEX_API      = 'api/data.php';
 const AEX_API_TK   = 'aex-admin-tk-2024';
