@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Clientes — Admin AEX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/aex-styles.css">
+  <style>
+    .cli-row { margin-bottom: 12px; }
+    .cli-header { display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .cli-name { font-weight:700; }
+    .cli-cnpj { font-size:12px; color:var(--aex-muted); }
+    .cli-actions { display:flex; gap:8px; margin-top:14px; flex-wrap:wrap; align-items:center; }
+    .desconto-input { width:80px; }
+    .filter-row { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+    .filter-btn { padding:6px 14px;border-radius:20px;border:1px solid var(--aex-border);background:transparent;color:var(--aex-muted);cursor:pointer;font-size:13px;transition:.2s; }
+    .filter-btn.active { background:var(--aex-red);color:#fff;border-color:var(--aex-red); }
+    .cli-info { font-size:13px;color:var(--aex-muted);margin-top:6px; }
+  </style>
+</head>
+<body>
+  <nav class="aex-nav">
+    <img src="/assets/aex-logo.png" class="logo" alt="AEX" onerror="this.style.display='none'">
+    <div class="aex-nav-links">
+      <a href="/admin">Dashboard</a>
+      <a href="/admin/pedidos">Pedidos</a>
+      <a href="/admin/clientes" class="active">Clientes</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="page-title" style="margin:0">Clientes</h1>
+      <button class="btn btn-secondary btn-sm" onclick="load()">↻ Atualizar</button>
+    </div>
+
+    <div class="filter-row">
+      <button class="filter-btn active" onclick="setFilter('todos',this)">Todos</button>
+      <button class="filter-btn" onclick="setFilter('pendente',this)">Pendentes</button>
+      <button class="filter-btn" onclick="setFilter('aprovado',this)">Aprovados</button>
+      <button class="filter-btn" onclick="setFilter('bloqueado',this)">Bloqueados</button>
+    </div>
+
+    <div id="loading" style="text-align:center;padding:40px;color:var(--aex-muted)">Carregando...</div>
+    <div id="list"></div>
+  </div>
+
+  <div id="aex-toast"></div>
+
+  <script>
+    // Escapa HTML para prevenir XSS em innerHTML
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+    );
+    // Valida que um valor é inteiro (para uso em onclick)
+    const safeId = n => Number.isInteger(Number(n)) ? Number(n) : 0;
+
+    let clientes = [];
+    let filtro = 'todos';
+    let nivel = 'operacional';
+
+    function toast(msg, err) {
+      const el = document.getElementById('aex-toast');
+      el.textContent = msg;
+      el.className = 'show' + (err ? ' error' : '');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 3500);
+    }
+    async function logout() { await fetch('/api/auth/logout',{method:'POST'}); location.href='/login'; }
+
+    function setFilter(f, btn) {
+      filtro = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    }
+
+    function render() {
+      const vis = filtro === 'todos' ? clientes : clientes.filter(c => c.status === filtro);
+      if (!vis.length) { document.getElementById('list').innerHTML = '<p style="color:var(--aex-muted);padding:24px">Nenhum cliente.</p>'; return; }
+
+      document.getElementById('list').innerHTML = vis.map(c => {
+        const data = new Date(c.criado_em).toLocaleDateString('pt-BR');
+        const isGestor = nivel === 'gestor';
+        const cid = safeId(c.id);
+        const statusSafe = ['pendente','aprovado','bloqueado'].includes(c.status) ? c.status : 'pendente';
+        const descNum = parseFloat(c.desconto_percentual) || 0;
+        return `
+          <div class="card cli-row">
+            <div class="cli-header">
+              <span class="cli-name">${esc(c.razao_social)}</span>
+              <span class="badge badge-${statusSafe}">${esc(c.status)}</span>
+              <span class="cli-cnpj">${esc(c.cnpj)}</span>
+              <span style="margin-left:auto;font-size:12px;color:var(--aex-muted)">desde ${esc(data)}</span>
+            </div>
+            <div class="cli-info">
+              👤 ${esc(c.responsavel)} · 📧 ${esc(c.email)} · 📱 ${esc(c.whatsapp)}
+              ${descNum > 0 ? ` · <span class="text-success">Desconto: ${descNum}%</span>` : ''}
+            </div>
+
+            ${isGestor ? `
+              <div class="cli-actions">
+                ${statusSafe !== 'aprovado'  ? `<button class="btn btn-sm" style="background:#002a10;color:var(--aex-success);border:none" onclick="updateStatus(${cid},'aprovado')">✅ Aprovar</button>` : ''}
+                ${statusSafe !== 'bloqueado' ? `<button class="btn btn-sm" style="background:#2a0008;color:#f87171;border:none" onclick="updateStatus(${cid},'bloqueado')">🚫 Bloquear</button>` : ''}
+                ${statusSafe !== 'pendente'  ? `<button class="btn btn-sm btn-ghost" onclick="updateStatus(${cid},'pendente')">⏳ Pendente</button>` : ''}
+
+                <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+                  <label style="font-size:13px;color:var(--aex-muted)">Desconto %:</label>
+                  <input type="number" class="desconto-input" id="desc-${cid}" value="${descNum}" min="0" max="100" step="0.5">
+                  <button class="btn btn-secondary btn-sm" onclick="applyDesconto(${cid})">Salvar</button>
+                </div>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        const r = await fetch(`/api/clients/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status }),
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error, true); return; }
+        toast('✅ Status atualizado!');
+        const c = clientes.find(x => x.id === id);
+        if (c) c.status = status;
+        render();
+      } catch { toast('Erro.', true); }
+    }
+
+    async function applyDesconto(id) {
+      const val = parseFloat(document.getElementById('desc-' + id).value);
+      try {
+        const r = await fetch(`/api/clients/${id}/desconto`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ desconto: val }),
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error, true); return; }
+        toast(`✅ Desconto de ${val}% aplicado!`);
+        const c = clientes.find(x => x.id === id);
+        if (c) c.desconto_percentual = val;
+        render();
+      } catch { toast('Erro.', true); }
+    }
+
+    async function load() {
+      try {
+        const r = await fetch('/api/clients');
+        if (r.status === 401) { location.href = '/login'; return; }
+        clientes = await r.json();
+        document.getElementById('loading').hidden = true;
+        render();
+      } catch { document.getElementById('loading').textContent = 'Erro ao carregar.'; }
+    }
+
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (!d || d.tipo !== 'admin') { location.href = '/login'; return; }
+      nivel = d.nivel;
+      load();
+    });
+  </script>
+</body>
+</html>

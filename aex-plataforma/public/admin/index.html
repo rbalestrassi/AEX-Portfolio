@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Dashboard Admin — AEX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/aex-styles.css">
+  <style>
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 32px; }
+    .stat-card { background: var(--aex-card); border: 1px solid var(--aex-border); border-radius: var(--radius); padding: 20px; }
+    .stat-num { font-size: 32px; font-weight: 700; }
+    .stat-label { font-size: 13px; color: var(--aex-muted); margin-top: 4px; }
+    .admin-nav a.active { color: var(--aex-text); background: var(--aex-card); }
+    .menu-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; }
+    .menu-card { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 32px; text-decoration: none; color: var(--aex-text); text-align: center; transition: .2s; }
+    .menu-card:hover { border-color: var(--aex-red); transform: translateY(-2px); }
+    .menu-card .icon { font-size: 36px; }
+    .badge-alert { background: var(--aex-red); color: #fff; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+  </style>
+</head>
+<body>
+  <nav class="aex-nav">
+    <img src="/assets/aex-logo.png" class="logo" alt="AEX" onerror="this.style.display='none'">
+    <div class="aex-nav-links admin-nav">
+      <a href="/admin" class="active">Dashboard</a>
+      <a href="/admin/pedidos">Pedidos</a>
+      <a href="/admin/clientes">Clientes</a>
+      <a href="/admin/produtos">Produtos</a>
+      <span id="admin-nome" class="text-muted" style="font-size:13px"></span>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <h1 class="page-title">Dashboard</h1>
+
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-num" id="s-recebido">—</div>
+        <div class="stat-label">Pedidos Recebidos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="s-separando">—</div>
+        <div class="stat-label">Em Separação</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="s-enviado">—</div>
+        <div class="stat-label">Enviados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="s-entregue">—</div>
+        <div class="stat-label">Entregues</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="s-clientes">—</div>
+        <div class="stat-label">Clientes Ativos</div>
+      </div>
+      <div class="stat-card" id="card-pendentes" style="border-color:var(--aex-warn)">
+        <div class="stat-num text-red" id="s-pendentes">—</div>
+        <div class="stat-label">Cadastros Pendentes</div>
+      </div>
+    </div>
+
+    <div class="menu-grid">
+      <a href="/admin/pedidos" class="card menu-card">
+        <div class="icon">📦</div>
+        <strong>Gerenciar Pedidos</strong>
+        <span class="text-muted">Atualizar status dos pedidos</span>
+      </a>
+      <a href="/admin/clientes" class="card menu-card">
+        <div class="icon">👥</div>
+        <strong>Clientes</strong>
+        <span class="text-muted" id="menu-pendentes">Aprovar cadastros e descontos</span>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    async function logout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      location.href = '/login';
+    }
+
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (!d || d.tipo !== 'admin') { location.href = '/login'; return; }
+      document.getElementById('admin-nome').textContent = d.nome + ' (' + d.nivel + ')';
+    });
+
+    fetch('/api/admin/dashboard').then(r => r.json()).then(d => {
+      const map = {};
+      d.pedidos.forEach(p => map[p.status] = parseInt(p.count));
+      ['recebido','separando','enviado','entregue'].forEach(s =>
+        document.getElementById('s-' + s).textContent = map[s] || 0
+      );
+      document.getElementById('s-clientes').textContent = d.clientes_ativos;
+      document.getElementById('s-pendentes').textContent = d.cadastros_pendentes;
+      if (d.cadastros_pendentes > 0) {
+        document.getElementById('menu-pendentes').innerHTML =
+          `Aprovar cadastros <span class="badge-alert">${d.cadastros_pendentes}</span>`;
+      }
+    }).catch(() => {});
+  </script>
+</body>
+</html>

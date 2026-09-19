@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meus Pedidos — AEX Air Automotive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/aex-styles.css">
+  <style>
+    .pedido-card { margin-bottom: 16px; }
+    .pedido-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 8px; }
+    .pedido-numero { font-size: 16px; font-weight: 700; }
+    .pedido-data { font-size: 12px; color: var(--aex-muted); }
+    .itens-list { margin-top: 16px; }
+    .item-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--aex-border); font-size: 13px; }
+    .item-row img { width: 40px; height: 40px; object-fit: cover; border-radius: 6px; background: #222; }
+    .pedido-obs { font-size: 13px; color: var(--aex-muted); margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--aex-border); }
+    .empty-msg { text-align: center; padding: 64px; color: var(--aex-muted); }
+    .toggle-btn { background: none; border: none; color: var(--aex-red); cursor: pointer; font-size: 13px; font-weight: 600; }
+    .btn-novo { position: fixed; bottom: 24px; right: 24px; border-radius: 50px; padding: 14px 24px; box-shadow: 0 4px 16px rgba(200,16,46,0.4); }
+  </style>
+</head>
+<body>
+  <nav class="aex-nav">
+    <img src="/assets/aex-logo.png" class="logo" alt="AEX" onerror="this.style.display='none'">
+    <div class="aex-nav-links">
+      <a href="/">Catálogo</a>
+      <a href="/meus-pedidos" class="active">Meus Pedidos</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="page-title" style="margin:0">Meus Pedidos</h1>
+      <span id="user-name" class="text-muted"></span>
+    </div>
+
+    <div id="loading" style="text-align:center;padding:48px;color:var(--aex-muted)">Carregando pedidos...</div>
+    <div id="empty" class="empty-msg" hidden>
+      <p style="font-size:40px">📋</p>
+      <p style="margin-top:12px">Nenhum pedido ainda.</p>
+      <a href="/" class="btn btn-primary" style="margin-top:16px">Fazer primeiro pedido</a>
+    </div>
+    <div id="pedidos-list"></div>
+  </div>
+
+  <a href="/pedido" class="btn btn-primary btn-novo">🛒 Novo Pedido</a>
+  <div id="aex-toast"></div>
+
+  <script>
+    const STEPS = ['recebido','separando','enviado','entregue'];
+    const STEP_LABELS = { recebido:'Recebido', separando:'Separando', enviado:'Enviado', entregue:'Entregue' };
+
+    function toast(msg, err) {
+      const el = document.getElementById('aex-toast');
+      el.textContent = msg;
+      el.className = 'show' + (err ? ' error' : '');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 4000);
+    }
+
+    async function logout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      location.href = '/login';
+    }
+
+    function progressBar(status) {
+      const cur = STEPS.indexOf(status);
+      return `<div class="progress-bar">` +
+        STEPS.map((s, i) => `
+          <div class="progress-step ${i < cur ? 'done' : i === cur ? 'active' : ''}">
+            <div class="step-dot">${i < cur ? '✓' : i + 1}</div>
+            <div class="step-label">${STEP_LABELS[s]}</div>
+          </div>
+        `).join('') +
+      `</div>`;
+    }
+
+    function renderPedido(p) {
+      const itens = (() => { try { return typeof p.itens === 'string' ? JSON.parse(p.itens) : (p.itens || []); } catch { return []; } })();
+      const data  = new Date(p.criado_em).toLocaleDateString('pt-BR');
+      const hora  = new Date(p.criado_em).toLocaleTimeString('pt-BR', { hour:'2-digit', minute:'2-digit' });
+      const totalPcs = itens.reduce((s, i) => s + (i.quantidade || 1), 0);
+      const id = 'p' + p.id;
+
+      return `
+        <div class="card pedido-card">
+          <div class="pedido-header">
+            <div>
+              <div class="pedido-numero">📦 ${p.numero}</div>
+              <div class="pedido-data">${data} às ${hora} · ${itens.length} modelo(s) · ${totalPcs} unidade(s)</div>
+            </div>
+            <span class="badge badge-${p.status}">${STEP_LABELS[p.status]}</span>
+          </div>
+
+          ${progressBar(p.status)}
+
+          <button class="toggle-btn" onclick="toggleItens('${id}')">
+            Ver itens ▾
+          </button>
+          <div id="${id}-itens" class="itens-list" hidden>
+            ${itens.map(i => `
+              <div class="item-row">
+                <img src="${i.imagem || ''}" alt="${i.nome}" onerror="this.style.display='none'">
+                <span><strong>${i.codigo}</strong> — ${i.nome}</span>
+                <span style="margin-left:auto;font-weight:600">${i.quantidade || 1}x</span>
+              </div>
+            `).join('')}
+          </div>
+
+          ${p.observacao ? `<div class="pedido-obs"><strong>Obs:</strong> ${p.observacao}</div>` : ''}
+          ${p.desconto_aplicado > 0 ? `<div class="pedido-obs text-success">Desconto aplicado: ${p.desconto_aplicado}%</div>` : ''}
+        </div>
+      `;
+    }
+
+    function toggleItens(id) {
+      const el = document.getElementById(id + '-itens');
+      el.hidden = !el.hidden;
+    }
+
+    async function loadPedidos() {
+      try {
+        const r = await fetch('/api/orders');
+        if (r.status === 401) { location.href = '/login?next=/meus-pedidos'; return; }
+        const pedidos = await r.json();
+        document.getElementById('loading').hidden = true;
+
+        if (!pedidos.length) { document.getElementById('empty').hidden = false; return; }
+
+        document.getElementById('pedidos-list').innerHTML = pedidos.map(renderPedido).join('');
+      } catch {
+        document.getElementById('loading').textContent = 'Erro ao carregar pedidos.';
+      }
+    }
+
+    // Init
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (!d || d.tipo !== 'cliente') { location.href = '/login?next=/meus-pedidos'; return; }
+      document.getElementById('user-name').textContent = d.razao_social || d.nome;
+      loadPedidos();
+
+      // Polling a cada 30s
+      setInterval(loadPedidos, 30000);
+    });
+  </script>
+</body>
+</html>

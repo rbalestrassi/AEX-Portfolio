@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Pedidos — Admin AEX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/aex-styles.css">
+  <style>
+    .filters { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-btn { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--aex-border); background: transparent; color: var(--aex-muted); cursor: pointer; font-size: 13px; transition:.2s; }
+    .filter-btn.active { background: var(--aex-red); color:#fff; border-color:var(--aex-red); }
+    .pedido-row { margin-bottom: 12px; }
+    .pedido-row-header { display: flex; align-items:center; gap:12px; flex-wrap:wrap; }
+    .p-num { font-weight:700; font-size:15px; }
+    .p-cliente { font-size:13px; color:var(--aex-muted); }
+    .p-data { font-size:12px; color:var(--aex-muted); margin-left:auto; }
+    .status-form { display: flex; gap: 8px; align-items:center; margin-top:14px; flex-wrap:wrap; }
+    .status-form select { flex:1; min-width:140px; }
+    .status-form input { flex:2; min-width:180px; }
+    .itens-mini { font-size:12px; color:var(--aex-muted); margin-top:8px; }
+    .toggle-btn { background:none;border:none;color:var(--aex-red);cursor:pointer;font-size:13px;font-weight:600; }
+    .detail-block { margin-top:12px;padding-top:12px;border-top:1px solid var(--aex-border); }
+    .detail-item { font-size:13px;padding:4px 0; }
+  </style>
+</head>
+<body>
+  <nav class="aex-nav">
+    <img src="/assets/aex-logo.png" class="logo" alt="AEX" onerror="this.style.display='none'">
+    <div class="aex-nav-links">
+      <a href="/admin">Dashboard</a>
+      <a href="/admin/pedidos" class="active">Pedidos</a>
+      <a href="/admin/clientes">Clientes</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="page-title" style="margin:0">Pedidos</h1>
+      <button class="btn btn-secondary btn-sm" onclick="load()">↻ Atualizar</button>
+    </div>
+
+    <div class="filters">
+      <button class="filter-btn active" onclick="setFilter('todos',this)">Todos</button>
+      <button class="filter-btn" onclick="setFilter('recebido',this)">Recebidos</button>
+      <button class="filter-btn" onclick="setFilter('separando',this)">Separando</button>
+      <button class="filter-btn" onclick="setFilter('enviado',this)">Enviados</button>
+      <button class="filter-btn" onclick="setFilter('entregue',this)">Entregues</button>
+    </div>
+
+    <div id="loading" style="text-align:center;padding:40px;color:var(--aex-muted)">Carregando...</div>
+    <div id="list"></div>
+  </div>
+
+  <div id="aex-toast"></div>
+
+  <script>
+    // Escapa HTML para prevenir XSS em innerHTML
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
+    );
+    // Valida número de WhatsApp (só dígitos, +, espaço, hífen, parênteses)
+    const safeWa = n => /^[\d+\-\s()]{5,20}$/.test(String(n ?? '')) ? String(n) : '';
+    const safeId = n => Number.isInteger(Number(n)) ? Number(n) : 0;
+
+    let pedidos = [];
+    let filtro  = 'todos';
+    const LABELS = { recebido:'Recebido', separando:'Separando', enviado:'Enviado', entregue:'Entregue' };
+
+    function toast(msg, err) {
+      const el = document.getElementById('aex-toast');
+      el.textContent = msg;
+      el.className = 'show' + (err ? ' error' : '');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 3500);
+    }
+    async function logout() { await fetch('/api/auth/logout',{method:'POST'}); location.href='/login'; }
+
+    function setFilter(f, btn) {
+      filtro = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      render();
+    }
+
+    function render() {
+      const statusValidos = ['recebido','separando','enviado','entregue'];
+      const vis = filtro === 'todos' ? pedidos : pedidos.filter(p => p.status === filtro);
+      if (!vis.length) { document.getElementById('list').innerHTML = '<p style="color:var(--aex-muted);padding:24px">Nenhum pedido.</p>'; return; }
+
+      document.getElementById('list').innerHTML = vis.map(p => {
+        const itens = (() => { try { return typeof p.itens === 'string' ? JSON.parse(p.itens) : (p.itens || []); } catch { return []; } })();
+        const data  = new Date(p.criado_em).toLocaleDateString('pt-BR');
+        const hora  = new Date(p.criado_em).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});
+        const totalPcs = itens.reduce((s,i) => s + (i.quantidade||1), 0);
+        const pid = safeId(p.id);
+        const statusSafe = statusValidos.includes(p.status) ? p.status : 'recebido';
+        const waNum = safeWa(p.cliente_whatsapp);
+        return `
+          <div class="card pedido-row">
+            <div class="pedido-row-header">
+              <span class="p-num">📦 ${esc(p.numero)}</span>
+              <span class="badge badge-${statusSafe}">${esc(LABELS[statusSafe])}</span>
+              <span class="p-cliente">${esc(p.razao_social)} · ${esc(p.responsavel)}</span>
+              <span class="p-data">${esc(data)} ${esc(hora)}</span>
+            </div>
+            <div class="itens-mini">${itens.length} modelo(s) · ${totalPcs} unidade(s)
+              ${p.observacao ? ` · <em>"${esc(p.observacao)}"</em>` : ''}
+            </div>
+
+            <button class="toggle-btn" onclick="toggleDetail(${pid})">Ver detalhes ▾</button>
+
+            <div id="det-${pid}" hidden class="detail-block">
+              ${itens.map(i => `<div class="detail-item">• <strong>${esc(i.codigo)}</strong> — ${esc(i.nome)} (${parseInt(i.quantidade)||1}x)</div>`).join('')}
+              ${waNum ? `<div class="detail-item" style="margin-top:8px">📱 <a href="https://wa.me/${waNum}" target="_blank" rel="noopener" style="color:var(--aex-success)">${esc(p.cliente_whatsapp)}</a></div>` : ''}
+            </div>
+
+            <div class="status-form">
+              <select id="sel-${pid}">
+                ${statusValidos.map(s =>
+                  `<option value="${s}" ${s===statusSafe?'selected':''}>${esc(LABELS[s])}</option>`
+                ).join('')}
+              </select>
+              <input type="text" id="obs-${pid}" placeholder="Observação (opcional)">
+              <button class="btn btn-primary btn-sm" onclick="updateStatus(${pid})">Salvar</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function toggleDetail(id) {
+      const el = document.getElementById('det-' + safeId(id));
+      if (el) el.hidden = !el.hidden;
+    }
+
+    async function updateStatus(id) {
+      const pid    = safeId(id);
+      const status = document.getElementById('sel-' + pid)?.value;
+      const obs    = document.getElementById('obs-' + pid)?.value;
+      if (!status) return;
+      try {
+        const r = await fetch(`/api/admin/pedidos/${pid}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status, observacao: obs }),
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error, true); return; }
+        toast('✅ Status atualizado!');
+        const p = pedidos.find(x => x.id === pid);
+        if (p) p.status = status;
+        render();
+      } catch { toast('Erro ao atualizar.', true); }
+    }
+
+    async function load() {
+      try {
+        const r = await fetch('/api/admin/pedidos');
+        if (r.status === 401) { location.href = '/login'; return; }
+        pedidos = await r.json();
+        document.getElementById('loading').hidden = true;
+        render();
+      } catch { document.getElementById('loading').textContent = 'Erro ao carregar.'; }
+    }
+
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (!d || d.tipo !== 'admin') { location.href = '/login'; return; }
+      load();
+    });
+  </script>
+</body>
+</html>

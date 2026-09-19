@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Finalizar Pedido — AEX Air Automotive</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/aex-styles.css">
+  <style>
+    .cart-item {
+      display: flex; align-items: center; gap: 16px;
+      padding: 14px 0; border-bottom: 1px solid var(--aex-border);
+    }
+    .cart-item img { width: 64px; height: 64px; object-fit: cover; border-radius: 8px; background: #222; }
+    .cart-item-info { flex: 1; }
+    .cart-item-info strong { display: block; font-size: 14px; }
+    .cart-item-info span { font-size: 12px; color: var(--aex-muted); }
+    .qty-ctrl { display: flex; align-items: center; gap: 8px; }
+    .qty-ctrl button { width: 28px; height: 28px; border-radius: 6px; border: 1px solid var(--aex-border); background: var(--aex-dark); color: var(--aex-text); cursor: pointer; font-size: 16px; }
+    .qty-ctrl span { min-width: 24px; text-align: center; font-weight: 600; }
+    .remove-btn { background: none; border: none; color: var(--aex-muted); cursor: pointer; font-size: 18px; padding: 4px; }
+    .remove-btn:hover { color: var(--aex-red); }
+    .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
+    .summary-row.total { font-size: 16px; font-weight: 700; border-top: 1px solid var(--aex-border); margin-top: 8px; padding-top: 12px; }
+    .empty-cart { text-align: center; padding: 48px; color: var(--aex-muted); }
+  </style>
+</head>
+<body>
+  <nav class="aex-nav">
+    <img src="/assets/aex-logo.png" class="logo" alt="AEX" onerror="this.style.display='none'">
+    <div class="aex-nav-links">
+      <a href="/">Catálogo</a>
+      <a href="/meus-pedidos">Meus Pedidos</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="container" style="max-width:720px">
+    <h1 class="page-title">Finalizar Pedido</h1>
+
+    <div id="cart-empty" class="empty-cart" hidden>
+      <p style="font-size:40px">🛒</p>
+      <p style="margin-top:12px;font-size:16px">Seu carrinho está vazio.</p>
+      <a href="/" class="btn btn-primary" style="margin-top:16px">Ver catálogo</a>
+    </div>
+
+    <div id="cart-content">
+      <div class="card mb-4">
+        <h3 style="margin-bottom:16px;font-size:16px">Itens do pedido</h3>
+        <div id="cart-items"></div>
+      </div>
+
+      <div class="card mb-4">
+        <h3 style="margin-bottom:16px;font-size:16px">Observação</h3>
+        <div class="form-group" style="margin:0">
+          <textarea id="obs" placeholder="Instruções especiais, prazo, etc. (opcional)"></textarea>
+        </div>
+      </div>
+
+      <div class="card mb-4">
+        <h3 style="margin-bottom:16px;font-size:16px">Resumo</h3>
+        <div class="summary-row"><span>Total de itens</span><span id="total-itens">—</span></div>
+        <div class="summary-row" id="row-desconto" hidden>
+          <span id="label-desconto">Desconto</span>
+          <span id="val-desconto" class="text-success">—</span>
+        </div>
+        <div class="summary-row total"><span>Compressores</span><span id="total-pcs">—</span></div>
+      </div>
+
+      <button class="btn btn-primary" style="width:100%;padding:14px;font-size:16px" id="btn-finalizar" onclick="finalizar()">
+        ✅ Confirmar Pedido
+      </button>
+      <a href="/" class="btn btn-secondary" style="width:100%;justify-content:center;margin-top:12px">← Continuar comprando</a>
+    </div>
+  </div>
+
+  <div id="aex-toast"></div>
+
+  <script>
+    let session = null;
+    let cart = (() => { try { return JSON.parse(localStorage.getItem('aex_cart') || '[]'); } catch { return []; } })();
+
+    function toast(msg, err) {
+      const el = document.getElementById('aex-toast');
+      el.textContent = msg;
+      el.className = 'show' + (err ? ' error' : '');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 4000);
+    }
+
+    async function logout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      location.href = '/login';
+    }
+
+    function saveCart() { localStorage.setItem('aex_cart', JSON.stringify(cart)); }
+
+    function updateQty(codigo, delta) {
+      const item = cart.find(i => i.codigo === codigo);
+      if (!item) return;
+      item.quantidade = Math.max(1, (item.quantidade || 1) + delta);
+      saveCart(); render();
+    }
+
+    function removeItem(codigo) {
+      cart = cart.filter(i => i.codigo !== codigo);
+      saveCart(); render();
+    }
+
+    function render() {
+      if (cart.length === 0) {
+        document.getElementById('cart-empty').hidden = false;
+        document.getElementById('cart-content').hidden = true;
+        return;
+      }
+      document.getElementById('cart-empty').hidden = true;
+      document.getElementById('cart-content').hidden = false;
+
+      const totalPcs = cart.reduce((s, i) => s + (i.quantidade || 1), 0);
+      document.getElementById('total-itens').textContent = cart.length + ' modelo(s)';
+      document.getElementById('total-pcs').textContent = totalPcs + ' unidade(s)';
+
+      if (session?.desconto > 0) {
+        document.getElementById('row-desconto').hidden = false;
+        document.getElementById('label-desconto').textContent = `Desconto (${session.desconto}%)`;
+        document.getElementById('val-desconto').textContent = `-${session.desconto}%`;
+      }
+
+      const el = document.getElementById('cart-items');
+      el.innerHTML = cart.map(item => `
+        <div class="cart-item">
+          <img src="${item.imagem || ''}" alt="${item.nome}" onerror="this.src=''">
+          <div class="cart-item-info">
+            <strong>${item.codigo} — ${item.nome}</strong>
+            <span>${item.linha || ''}</span>
+          </div>
+          <div class="qty-ctrl">
+            <button onclick="updateQty('${item.codigo}', -1)">−</button>
+            <span>${item.quantidade || 1}</span>
+            <button onclick="updateQty('${item.codigo}', +1)">+</button>
+          </div>
+          <button class="remove-btn" onclick="removeItem('${item.codigo}')" title="Remover">✕</button>
+        </div>
+      `).join('');
+    }
+
+    async function finalizar() {
+      if (cart.length === 0) return;
+      const btn = document.getElementById('btn-finalizar');
+      btn.disabled = true; btn.textContent = 'Enviando...';
+
+      try {
+        const r = await fetch('/api/orders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            itens: cart.map(i => ({
+              codigo:     i.codigo,
+              nome:       i.nome,
+              quantidade: i.quantidade || 1,
+              imagem:     i.imagem || '',
+            })),
+            observacao: document.getElementById('obs').value,
+          }),
+        });
+        const d = await r.json();
+        if (!r.ok) {
+          if (r.status === 401) { location.href = '/login?next=/pedido'; return; }
+          toast(d.error, true); btn.disabled = false; btn.textContent = '✅ Confirmar Pedido'; return;
+        }
+        localStorage.removeItem('aex_cart');
+        toast('✅ Pedido ' + d.pedido.numero + ' confirmado!');
+        setTimeout(() => location.href = '/meus-pedidos', 2000);
+      } catch {
+        toast('Erro de conexão. Tente novamente.', true);
+        btn.disabled = false; btn.textContent = '✅ Confirmar Pedido';
+      }
+    }
+
+    // Init
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (!d) { location.href = '/login?next=/pedido'; return; }
+      if (d.tipo !== 'cliente' || d.status !== 'aprovado') {
+        toast('Cadastro pendente de aprovação.', true); return;
+      }
+      session = d;
+      render();
+    });
+  </script>
+</body>
+</html>

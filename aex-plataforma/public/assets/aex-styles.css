@@ -1,0 +1,169 @@
+/* AEX Air Automotive — Estilos Compartilhados */
+:root {
+  --aex-black:   #0a0a0a;
+  --aex-dark:    #111111;
+  --aex-card:    #1a1a1a;
+  --aex-border:  #2a2a2a;
+  --aex-red:     #c8102e;
+  --aex-red-h:   #e01535;
+  --aex-text:    #f0f0f0;
+  --aex-muted:   #888888;
+  --aex-success: #22c55e;
+  --aex-warn:    #f59e0b;
+  --radius:      10px;
+  --shadow:      0 4px 24px rgba(0,0,0,0.5);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--aex-black);
+  color: var(--aex-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  min-height: 100vh;
+}
+
+/* ── Navbar ── */
+.aex-nav {
+  background: var(--aex-dark);
+  border-bottom: 1px solid var(--aex-border);
+  padding: 14px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+.aex-nav .logo { height: 36px; }
+.aex-nav-links { display: flex; gap: 12px; align-items: center; }
+.aex-nav-links a {
+  color: var(--aex-muted);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  transition: .2s;
+}
+.aex-nav-links a:hover, .aex-nav-links a.active { color: var(--aex-text); background: var(--aex-card); }
+
+/* ── Botões ── */
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 10px 20px; border-radius: var(--radius);
+  font-size: 14px; font-weight: 600; cursor: pointer;
+  border: none; transition: .2s; text-decoration: none;
+}
+.btn-primary { background: var(--aex-red); color: #fff; }
+.btn-primary:hover { background: var(--aex-red-h); }
+.btn-secondary { background: var(--aex-card); color: var(--aex-text); border: 1px solid var(--aex-border); }
+.btn-secondary:hover { border-color: var(--aex-red); }
+.btn-sm { padding: 6px 14px; font-size: 13px; }
+.btn-ghost { background: transparent; color: var(--aex-muted); }
+.btn-ghost:hover { color: var(--aex-text); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+
+/* ── Cards ── */
+.card {
+  background: var(--aex-card);
+  border: 1px solid var(--aex-border);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+/* ── Formulários ── */
+.form-group { margin-bottom: 16px; }
+.form-group label { display: block; font-size: 13px; color: var(--aex-muted); margin-bottom: 6px; }
+.form-group input, .form-group select, .form-group textarea {
+  width: 100%; padding: 10px 14px;
+  background: var(--aex-black); color: var(--aex-text);
+  border: 1px solid var(--aex-border); border-radius: 8px;
+  font-size: 14px; outline: none; transition: .2s;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--aex-red);
+}
+.form-group textarea { resize: vertical; min-height: 80px; }
+
+/* ── Badges de status ── */
+.badge {
+  display: inline-block; padding: 4px 10px;
+  border-radius: 20px; font-size: 12px; font-weight: 600;
+}
+.badge-pendente  { background: #2a2000; color: var(--aex-warn); }
+.badge-aprovado  { background: #002a10; color: var(--aex-success); }
+.badge-bloqueado { background: #2a0008; color: #f87171; }
+.badge-recebido  { background: #1a1a2e; color: #818cf8; }
+.badge-separando { background: #1a2a00; color: #a3e635; }
+.badge-enviado   { background: #002a2a; color: #22d3ee; }
+.badge-entregue  { background: #002a10; color: var(--aex-success); }
+
+/* ── Tabela ── */
+.aex-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.aex-table th {
+  text-align: left; padding: 10px 14px;
+  color: var(--aex-muted); font-weight: 500;
+  border-bottom: 1px solid var(--aex-border);
+}
+.aex-table td { padding: 12px 14px; border-bottom: 1px solid var(--aex-border); }
+.aex-table tr:last-child td { border-bottom: none; }
+.aex-table tr:hover td { background: rgba(255,255,255,.02); }
+
+/* ── Barra de progresso do pedido ── */
+.progress-bar {
+  display: flex; align-items: center; gap: 0;
+  margin: 20px 0;
+}
+.progress-step {
+  display: flex; flex-direction: column; align-items: center; flex: 1;
+  position: relative;
+}
+.progress-step::after {
+  content: '';
+  position: absolute; top: 16px; left: 50%;
+  width: 100%; height: 2px;
+  background: var(--aex-border);
+  z-index: 0;
+}
+.progress-step:last-child::after { display: none; }
+.step-dot {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: var(--aex-border); border: 2px solid var(--aex-border);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 13px; font-weight: 700; z-index: 1;
+  transition: .3s;
+}
+.step-label { font-size: 11px; color: var(--aex-muted); margin-top: 6px; text-align: center; }
+.progress-step.done .step-dot   { background: var(--aex-success); border-color: var(--aex-success); color: #000; }
+.progress-step.done::after      { background: var(--aex-success); }
+.progress-step.active .step-dot { background: var(--aex-red); border-color: var(--aex-red); color: #fff; }
+.progress-step.active .step-label { color: var(--aex-text); font-weight: 600; }
+
+/* ── Toast ── */
+#aex-toast {
+  position: fixed; bottom: 24px; right: 24px;
+  background: var(--aex-card); color: var(--aex-text);
+  border: 1px solid var(--aex-border); border-radius: var(--radius);
+  padding: 14px 20px; font-size: 14px;
+  box-shadow: var(--shadow); z-index: 9999;
+  transition: opacity .3s; opacity: 0; pointer-events: none;
+  max-width: 320px;
+}
+#aex-toast.show { opacity: 1; pointer-events: auto; }
+#aex-toast.error { border-color: var(--aex-red); color: #fca5a5; }
+
+/* ── Layout básico ── */
+.container { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+.page-title { font-size: 22px; font-weight: 700; margin-bottom: 24px; }
+
+/* ── Utilitários ── */
+.flex { display: flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.mb-4 { margin-bottom: 16px; }
+.mb-6 { margin-bottom: 24px; }
+.text-muted { color: var(--aex-muted); font-size: 13px; }
+.text-red { color: var(--aex-red); }
+.text-success { color: var(--aex-success); }

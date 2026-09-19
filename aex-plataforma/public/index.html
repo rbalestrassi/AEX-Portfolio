@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AEX Air Automotive — Catálogo B2B</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/aex-styles.css">
+  <style>
+    /* ── Hero ── */
+    .hero { background: linear-gradient(135deg, #0a0a0a 0%, #1a0005 100%); padding: 64px 24px; text-align:center; border-bottom:1px solid var(--aex-border); }
+    .hero h1 { font-size: clamp(28px, 5vw, 52px); font-weight:800; margin-bottom:12px; }
+    .hero h1 span { color: var(--aex-red); }
+    .hero p { color: var(--aex-muted); font-size:16px; max-width:520px; margin:0 auto 28px; }
+    .hero-stats { display:flex; gap:32px; justify-content:center; flex-wrap:wrap; margin-bottom:28px; }
+    .hero-stat strong { display:block; font-size:28px; font-weight:800; color:var(--aex-red); }
+    .hero-stat span { font-size:13px; color:var(--aex-muted); }
+
+    /* ── Filtros ── */
+    .filters-wrap { position:sticky; top:58px; z-index:50; background:var(--aex-dark); border-bottom:1px solid var(--aex-border); padding:12px 24px; }
+    .filters { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; }
+    .filter-btn { white-space:nowrap; padding:7px 16px; border-radius:20px; border:1px solid var(--aex-border); background:transparent; color:var(--aex-muted); cursor:pointer; font-size:13px; font-weight:500; transition:.2s; }
+    .filter-btn:hover { color:var(--aex-text); border-color:#555; }
+    .filter-btn.active { background:var(--aex-red); color:#fff; border-color:var(--aex-red); }
+
+    /* ── Grid de produtos ── */
+    .products-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px; padding:24px; }
+    .prod-card { background:var(--aex-card); border:1px solid var(--aex-border); border-radius:var(--radius); overflow:hidden; cursor:pointer; transition:.2s; }
+    .prod-card:hover { border-color:var(--aex-red); transform:translateY(-2px); }
+    .prod-img { position:relative; aspect-ratio:4/3; overflow:hidden; background:#111; }
+    .prod-img img { width:100%; height:100%; object-fit:cover; }
+    .prod-body { padding:14px; }
+    .prod-code { font-size:11px; color:var(--aex-muted); margin-bottom:4px; }
+    .prod-name { font-size:14px; font-weight:600; line-height:1.3; margin-bottom:8px; }
+    .prod-meta { font-size:12px; color:var(--aex-muted); }
+    .prod-line { display:inline-block; font-size:11px; font-weight:600; padding:3px 8px; border-radius:12px; background:rgba(200,16,46,.15); color:var(--aex-red); margin-bottom:8px; }
+    .btn-add { width:100%; margin-top:10px; }
+    .btn-add.added { background:var(--aex-success)!important; }
+
+    /* ── Carrinho flutuante ── */
+    #cart-fab {
+      position:fixed; bottom:24px; right:24px;
+      background:var(--aex-red); color:#fff;
+      border:none; border-radius:50px; padding:14px 20px;
+      font-size:15px; font-weight:700; cursor:pointer;
+      box-shadow:0 4px 16px rgba(200,16,46,.5);
+      display:flex; align-items:center; gap:10px;
+      transition:.3s; z-index:200;
+    }
+    #cart-fab.hidden { transform:translateY(100px); opacity:0; pointer-events:none; }
+    #cart-count { background:#fff; color:var(--aex-red); border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; }
+
+    /* ── Modal produto ── */
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; }
+    .modal-overlay.hidden { display:none; }
+    .modal-box { background:var(--aex-card); border:1px solid var(--aex-border); border-radius:12px; width:100%; max-width:680px; max-height:90vh; overflow-y:auto; }
+    .modal-imgs { position:relative; aspect-ratio:4/3; background:#111; }
+    .modal-imgs img { width:100%; height:100%; object-fit:cover; }
+    .modal-body { padding:24px; }
+    .modal-title { font-size:18px; font-weight:700; margin-bottom:4px; }
+    .modal-code { font-size:13px; color:var(--aex-muted); margin-bottom:16px; }
+    .specs-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:20px; }
+    .spec-item { font-size:13px; }
+    .spec-item span { color:var(--aex-muted); display:block; font-size:11px; }
+    .modal-vehicles { font-size:13px; color:var(--aex-muted); margin-bottom:20px; line-height:1.6; }
+    .img-thumbs { display:flex; gap:6px; padding:12px; overflow-x:auto; background:#111; }
+    .img-thumbs img { width:64px; height:64px; object-fit:cover; border-radius:6px; cursor:pointer; border:2px solid transparent; flex-shrink:0; }
+    .img-thumbs img.active { border-color:var(--aex-red); }
+    .modal-close { position:absolute; top:12px; right:12px; background:rgba(0,0,0,.7); color:#fff; border:none; border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; }
+
+    /* ── Navbar sessão ── */
+    .nav-user { font-size:13px; color:var(--aex-muted); }
+  </style>
+</head>
+<body>
+  <nav class="aex-nav">
+    <img src="/assets/aex-logo.png" class="logo" alt="AEX Air Automotive" onerror="this.style.display='none'">
+    <div class="aex-nav-links">
+      <span id="nav-user" class="nav-user"></span>
+      <a href="/meus-pedidos" id="link-pedidos" hidden>Meus Pedidos</a>
+      <a href="/login" id="link-login">Entrar</a>
+      <button id="btn-logout" class="btn btn-ghost btn-sm" onclick="logout()" hidden>Sair</button>
+    </div>
+  </nav>
+
+  <!-- Hero -->
+  <section class="hero">
+    <h1>Compressores <span>AEX</span></h1>
+    <p>Catálogo completo para revendas e distribuidores. Acesse com sua conta para fazer pedidos.</p>
+    <div class="hero-stats">
+      <div class="hero-stat"><strong id="total-count">+80</strong><span>Modelos</span></div>
+      <div class="hero-stat"><strong>R-134a</strong><span>Refrigerante</span></div>
+      <div class="hero-stat"><strong>OEM</strong><span>Qualidade</span></div>
+    </div>
+    <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+      <a href="/cadastro" class="btn btn-primary" id="btn-cad-hero">Criar conta B2B</a>
+      <a href="/login" class="btn btn-secondary" id="btn-login-hero">Entrar para pedir</a>
+    </div>
+  </section>
+
+  <!-- Filtros -->
+  <div class="filters-wrap">
+    <div class="filters" id="filters">
+      <button class="filter-btn active" onclick="setFilter('todas',this)">Todas</button>
+      <button class="filter-btn" onclick="setFilter('leve',this)">Linha Leve</button>
+      <button class="filter-btn" onclick="setFilter('pesada',this)">Linha Pesada</button>
+      <button class="filter-btn" onclick="setFilter('agricola',this)">Linha Agrícola</button>
+      <button class="filter-btn" onclick="setFilter('rodoviario',this)">Rodoviário</button>
+      <button class="filter-btn" onclick="setFilter('aerea',this)">Aérea</button>
+      <button class="filter-btn" onclick="setFilter('eletrica',this)">Elétrica/Híbrida</button>
+      <button class="filter-btn" onclick="setFilter('premium',this)">Premium</button>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  <div class="products-grid" id="products-grid">
+    <div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--aex-muted)">Carregando catálogo...</div>
+  </div>
+
+  <!-- Carrinho FAB -->
+  <button id="cart-fab" class="hidden" onclick="location.href='/pedido'">
+    🛒 Ver carrinho
+    <span id="cart-count">0</span>
+  </button>
+
+  <!-- Modal produto -->
+  <div class="modal-overlay hidden" id="modal" onclick="closeModal(event)">
+    <div class="modal-box" id="modal-box">
+      <div style="position:relative">
+        <div class="modal-imgs">
+          <img id="m-img" src="" alt="">
+        </div>
+        <div class="img-thumbs" id="m-thumbs"></div>
+        <button class="modal-close" onclick="closeModalForce()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="prod-line" id="m-line"></div>
+        <div class="modal-title" id="m-name"></div>
+        <div class="modal-code" id="m-code"></div>
+        <div class="specs-grid" id="m-specs"></div>
+        <div class="modal-vehicles" id="m-vehicles"></div>
+        <button class="btn btn-primary" style="width:100%" id="m-add-btn" onclick="addFromModal()">
+          🛒 Adicionar ao pedido
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="aex-toast"></div>
+
+  <script>
+    let produtos = [];
+    let activeFilter = 'todas';
+    let session = null;
+    let currentProd = null;
+    let cart = (() => { try { return JSON.parse(localStorage.getItem('aex_cart') || '[]'); } catch { return []; } })();
+
+    const LINE_LABELS = {
+      leve:'Linha Leve', pesada:'Linha Pesada', agricola:'Linha Agrícola',
+      rodoviario:'Linha Rodoviário', aerea:'Linha Aérea',
+      eletrica:'Linha Elétrica e Híbrida', premium:'Linha Premium',
+    };
+
+    function toast(msg, err) {
+      const el = document.getElementById('aex-toast');
+      el.textContent = msg;
+      el.className = 'show' + (err ? ' error' : '');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 3000);
+    }
+
+    async function logout() {
+      await fetch('/api/auth/logout', { method: 'POST' });
+      session = null; updateNav(); location.reload();
+    }
+
+    function updateNav() {
+      const isLogged = !!session;
+      document.getElementById('link-login').hidden   = isLogged;
+      document.getElementById('btn-logout').hidden   = !isLogged;
+      document.getElementById('link-pedidos').hidden = !isLogged;
+      document.getElementById('btn-cad-hero').hidden = isLogged;
+      document.getElementById('btn-login-hero').hidden = isLogged;
+      if (isLogged) {
+        document.getElementById('nav-user').textContent = session.razao_social || session.nome;
+      }
+    }
+
+    function updateCartFab() {
+      const total = cart.reduce((s, i) => s + (i.quantidade || 1), 0);
+      const fab   = document.getElementById('cart-fab');
+      document.getElementById('cart-count').textContent = total;
+      if (total > 0 && session?.status === 'aprovado') {
+        fab.classList.remove('hidden');
+      } else {
+        fab.classList.add('hidden');
+      }
+    }
+
+    function inCart(codigo) { return cart.some(i => i.codigo === codigo); }
+
+    function addToCart(p) {
+      if (!session) { location.href = '/login?next=/'; return; }
+      if (session.status !== 'aprovado') { toast('Aguarde aprovação do cadastro.', true); return; }
+      if (inCart(p.codigo)) {
+        toast('Já está no carrinho.'); return;
+      }
+      const imagens = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
+      cart.push({ codigo: p.codigo, nome: p.nome, linha: p.linha, quantidade: 1, imagem: imagens[0] || '' });
+      localStorage.setItem('aex_cart', JSON.stringify(cart));
+      updateCartFab();
+      toast('✅ ' + p.codigo + ' adicionado!');
+      renderGrid();
+    }
+
+    // Adiciona ao carrinho por ID (evita passar objeto inteiro no onclick)
+    function addToCartById(id) {
+      const p = produtos.find(x => x.id === id);
+      if (p) addToCart(p);
+    }
+
+    function addFromModal() {
+      if (currentProd) addToCart(currentProd);
+      closeModalForce();
+    }
+
+    function setFilter(f, btn) {
+      activeFilter = f;
+      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderGrid();
+    }
+
+    function matchFilter(p) {
+      if (activeFilter === 'todas') return true;
+      const linhas = typeof p.linhas === 'string' ? JSON.parse(p.linhas || '[]') : (p.linhas || []);
+      return linhas.includes(activeFilter) || p.linha === activeFilter;
+    }
+
+    function renderGrid() {
+      const vis = produtos.filter(matchFilter);
+      const grid = document.getElementById('products-grid');
+      if (!vis.length) {
+        grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--aex-muted)">Nenhum produto nessa categoria.</div>';
+        return;
+      }
+      grid.innerHTML = vis.map(p => {
+        const imagens = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
+        const img = imagens[0] || '';
+        const linhaLabel = LINE_LABELS[p.linha] || p.linha;
+        const already = inCart(p.codigo);
+        return `
+          <div class="prod-card" onclick="openModal(${p.id})">
+            <div class="prod-img">
+              <img src="${img}" alt="${p.nome}" loading="lazy" onerror="this.style.display='none'">
+            </div>
+            <div class="prod-body">
+              <div class="prod-line">${linhaLabel}</div>
+              <div class="prod-code">${p.codigo}</div>
+              <div class="prod-name">${p.nome}</div>
+              <div class="prod-meta">${p.modelo_compressor || ''} ${p.tensao ? '· ' + p.tensao : ''}</div>
+              <button class="btn btn-primary btn-sm btn-add ${already ? 'added' : ''}"
+                onclick="event.stopPropagation(); addToCartById(${p.id})">
+                ${already ? '✓ No carrinho' : '+ Adicionar ao pedido'}
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function openModal(id) {
+      const p = produtos.find(x => x.id === id);
+      if (!p) return;
+      currentProd = p;
+      const imagens = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
+      const linhas  = typeof p.linhas === 'string' ? JSON.parse(p.linhas || '[]') : (p.linhas || []);
+      const linhaLabel = linhas.length > 1
+        ? linhas.map(l => LINE_LABELS[l] || l).join(', ')
+        : (LINE_LABELS[p.linha] || p.linha);
+
+      document.getElementById('m-name').textContent = p.nome;
+      document.getElementById('m-code').textContent = p.codigo + (p.codigo_oem ? ' · OEM: ' + p.codigo_oem : '');
+      document.getElementById('m-line').textContent = linhaLabel;
+      document.getElementById('m-vehicles').textContent = p.veiculos || '';
+
+      const specs = [
+        ['Modelo', p.modelo_compressor], ['Tensão', p.tensao], ['Refrigerante', p.refrigerante],
+        ['Polia', p.polia], ['Óleo', p.tipo_oleo], ['Saída', p.saida],
+      ].filter(s => s[1]);
+      const specsEl = document.getElementById('m-specs');
+      specsEl.innerHTML = '';
+      specs.forEach(([k, v]) => {
+        const div = document.createElement('div');
+        div.className = 'spec-item';
+        const span = document.createElement('span');
+        span.textContent = k;
+        div.appendChild(span);
+        div.appendChild(document.createTextNode(v));
+        specsEl.appendChild(div);
+      });
+
+      // Imagens — usa dataset para evitar escape de src no onclick
+      const img = document.getElementById('m-img');
+      img.src = imagens[0] || '';
+      const thumbs = document.getElementById('m-thumbs');
+      thumbs.innerHTML = '';
+      imagens.forEach((src, i) => {
+        const t = document.createElement('img');
+        t.src = src;
+        t.loading = 'lazy';
+        if (i === 0) t.classList.add('active');
+        t.addEventListener('click', () => setImg(src, t));
+        thumbs.appendChild(t);
+      });
+      thumbs.hidden = imagens.length <= 1;
+
+      // Botão carrinho
+      const btn = document.getElementById('m-add-btn');
+      if (inCart(p.codigo)) {
+        btn.textContent = '✓ Já no carrinho';
+        btn.classList.add('added');
+      } else {
+        btn.textContent = '🛒 Adicionar ao pedido';
+        btn.classList.remove('added');
+      }
+
+      document.getElementById('modal').classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function setImg(src, el) {
+      document.getElementById('m-img').src = src;
+      document.querySelectorAll('#m-thumbs img').forEach(i => i.classList.remove('active'));
+      el.classList.add('active');
+    }
+
+    function closeModal(e) {
+      if (e.target === document.getElementById('modal')) closeModalForce();
+    }
+    function closeModalForce() {
+      document.getElementById('modal').classList.add('hidden');
+      document.body.style.overflow = '';
+      currentProd = null;
+    }
+
+    // Esc para fechar modal
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalForce(); });
+
+    async function loadProdutos() {
+      try {
+        const r = await fetch('/api/products');
+        produtos = await r.json();
+        document.getElementById('total-count').textContent = '+' + produtos.length;
+        renderGrid();
+      } catch {
+        document.getElementById('products-grid').innerHTML =
+          '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--aex-muted)">Erro ao carregar catálogo.</div>';
+      }
+    }
+
+    // Init
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
+      session = d;
+      updateNav();
+      updateCartFab();
+    });
+    loadProdutos();
+  </script>
+</body>
+</html>

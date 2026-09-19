@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Produtos — Admin AEX</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/aex-styles.css">
+  <style>
+    .search-bar { display:flex; gap:8px; margin-bottom:20px; }
+    .search-bar input { flex:1; }
+    .prod-row { display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid var(--aex-border); }
+    .prod-row img { width:56px; height:56px; object-fit:cover; border-radius:8px; background:#222; flex-shrink:0; }
+    .prod-info { flex:1; min-width:0; }
+    .prod-info strong { display:block; font-size:14px; }
+    .prod-info span { font-size:12px; color:var(--aex-muted); }
+    .prod-code { font-size:12px; color:var(--aex-muted); white-space:nowrap; }
+  </style>
+</head>
+<body>
+  <nav class="aex-nav">
+    <img src="/assets/aex-logo.png" class="logo" alt="AEX" onerror="this.style.display='none'">
+    <div class="aex-nav-links">
+      <a href="/admin">Dashboard</a>
+      <a href="/admin/pedidos">Pedidos</a>
+      <a href="/admin/clientes">Clientes</a>
+      <a href="/admin/produtos" class="active">Produtos</a>
+      <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+    </div>
+  </nav>
+
+  <div class="container">
+    <div class="flex items-center justify-between mb-6">
+      <h1 class="page-title" style="margin:0">Produtos <span id="count" class="text-muted" style="font-size:14px;font-weight:400"></span></h1>
+    </div>
+
+    <div class="search-bar">
+      <input type="text" id="busca" placeholder="Buscar por código, nome ou veículo..." oninput="filtrar()">
+    </div>
+
+    <div class="card">
+      <div id="loading" style="text-align:center;padding:40px;color:var(--aex-muted)">Carregando...</div>
+      <div id="list" hidden></div>
+    </div>
+  </div>
+
+  <div id="aex-toast"></div>
+
+  <script>
+    let produtos = [];
+
+    function toast(msg, err) {
+      const el = document.getElementById('aex-toast');
+      el.textContent = msg;
+      el.className = 'show' + (err ? ' error' : '');
+      clearTimeout(el._t);
+      el._t = setTimeout(() => el.className = '', 3000);
+    }
+    async function logout() { await fetch('/api/auth/logout',{method:'POST'}); location.href='/login'; }
+
+    const LINE_LABELS = {
+      leve:'Linha Leve', pesada:'Linha Pesada', agricola:'Linha Agrícola',
+      rodoviario:'Linha Rodoviário', aerea:'Linha Aérea',
+      eletrica:'Linha Elétrica e Híbrida', premium:'Linha Premium',
+    };
+
+    function filtrar() {
+      const q = document.getElementById('busca').value.toLowerCase();
+      const vis = q
+        ? produtos.filter(p =>
+            p.codigo?.toLowerCase().includes(q) ||
+            p.nome?.toLowerCase().includes(q) ||
+            p.veiculos?.toLowerCase().includes(q)
+          )
+        : produtos;
+      render(vis);
+    }
+
+    function render(lista) {
+      document.getElementById('count').textContent = `(${lista.length})`;
+      if (!lista.length) {
+        document.getElementById('list').innerHTML = '<p style="color:var(--aex-muted);padding:16px">Nenhum produto.</p>';
+        return;
+      }
+      document.getElementById('list').innerHTML = lista.map(p => {
+        const imagens = (() => { try { return typeof p.imagens === 'string' ? JSON.parse(p.imagens) : (p.imagens || []); } catch { return []; } })();
+        const linhaLabel = LINE_LABELS[p.linha] || p.linha || '—';
+        return `
+          <div class="prod-row">
+            <img src="${imagens[0] || ''}" alt="${p.codigo}" onerror="this.style.display='none'">
+            <div class="prod-info">
+              <strong>${p.nome}</strong>
+              <span>${linhaLabel}${p.modelo_compressor ? ' · ' + p.modelo_compressor : ''}${p.tensao ? ' · ' + p.tensao : ''}</span>
+              <span>${p.veiculos || ''}</span>
+            </div>
+            <span class="prod-code">${p.codigo}</span>
+          </div>
+        `;
+      }).join('');
+    }
+
+    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
+      if (!d || d.tipo !== 'admin') { location.href = '/login'; return; }
+      fetch('/api/products').then(r => r.json()).then(data => {
+        produtos = data;
+        document.getElementById('loading').hidden = true;
+        document.getElementById('list').hidden = false;
+        filtrar();
+      }).catch(() => {
+        document.getElementById('loading').textContent = 'Erro ao carregar produtos.';
+      });
+    });
+  </script>
+</body>
+</html>
