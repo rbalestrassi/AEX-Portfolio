@@ -90,11 +90,13 @@ async function syncProdutos() {
     for (const row of rows) {
       try {
         const { principal, todas } = parseLinha(row['Linha'] || '');
+        const codigo = row['Código'];
+        const imagem = `https://www.aexautomotive.com.br/assets/produtos/${codigo}-01.png`;
         await client.query(`
           INSERT INTO produtos
             (codigo, nome, linha, linhas, preco, ipi, marca, part_number,
-             veiculos, tipo_oleo, gas, tensao, codigo_oem, polia, modelo_compressor, ativo)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,true)
+             veiculos, tipo_oleo, gas, tensao, codigo_oem, polia, modelo_compressor, imagem, ativo)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,true)
           ON CONFLICT (codigo) DO UPDATE SET
             nome              = EXCLUDED.nome,
             linha             = EXCLUDED.linha,
@@ -109,9 +111,10 @@ async function syncProdutos() {
             tensao            = EXCLUDED.tensao,
             codigo_oem        = EXCLUDED.codigo_oem,
             polia             = EXCLUDED.polia,
-            modelo_compressor = EXCLUDED.modelo_compressor
+            modelo_compressor = EXCLUDED.modelo_compressor,
+            imagem            = EXCLUDED.imagem
         `, [
-          row['Código'],
+          codigo,
           row['Descrição'],
           principal,
           JSON.stringify(todas),
@@ -126,6 +129,7 @@ async function syncProdutos() {
           row['Código OEM'] || null,
           row['Polia'] || null,
           row['Modelo'] || null,
+          imagem,
         ]);
         // check if it was insert or update
         inseridos++;
