@@ -4,7 +4,19 @@ const pool     = require('../db');
 const { requireAdmin, requireGestor } = require('../middleware/auth');
 const waSvc    = require('../services/whatsapp');
 const emailSvc = require('../services/email');
+const { syncProdutos } = require('../sync-sheets');
 const router   = express.Router();
+
+// POST /api/admin/sync-produtos — sincroniza planilha Google Sheets → banco
+router.post('/sync-produtos', requireGestor, async (req, res) => {
+  try {
+    const resultado = await syncProdutos();
+    res.json({ ok: true, ...resultado });
+  } catch (err) {
+    console.error('[SYNC] Erro:', err.message);
+    res.status(500).json({ error: 'Erro ao sincronizar planilha: ' + err.message });
+  }
+});
 
 // GET /api/admin/pedidos — todos os pedidos
 router.get('/pedidos', requireAdmin, async (req, res) => {
