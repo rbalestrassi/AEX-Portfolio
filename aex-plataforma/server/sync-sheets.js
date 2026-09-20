@@ -91,7 +91,10 @@ async function syncProdutos() {
       try {
         const { principal, todas } = parseLinha(row['Linha'] || '');
         const codigo = row['Código'];
-        const imagem = `https://www.aexautomotive.com.br/assets/produtos/${codigo}-01.png`;
+        const partNum = row['Cod. Interno'] || row['Part-number'] || null;
+        const imagem = partNum
+          ? `https://www.aexautomotive.com.br/assets/produtos/AEX-${partNum}-01.png`
+          : null;
         await client.query(`
           INSERT INTO produtos
             (codigo, nome, linha, linhas, preco, ipi, marca, part_number,
