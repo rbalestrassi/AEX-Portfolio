@@ -107,7 +107,7 @@
   </nav>
 
   <!-- Hero -->
-  <section class="hero">
+  <section class="hero" id="hero-section">
     <h1>Compressores <span>AEX</span></h1>
     <p>Catálogo completo para revendas e distribuidores. Acesse com sua conta para fazer pedidos.</p>
     <div class="hero-stats">
@@ -231,6 +231,7 @@
       document.getElementById('link-pedidos').hidden = !isLogged;
       document.getElementById('btn-cad-hero').hidden = isLogged;
       document.getElementById('btn-login-hero').hidden = isLogged;
+      document.getElementById('hero-section').hidden = isLogged;
       if (isLogged) {
         document.getElementById('nav-user').textContent = session.razao_social || session.nome;
       }
@@ -277,7 +278,7 @@
       const p = qtyTarget;
       const imagens = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
       const precoFinal = calcPreco(p.preco);
-      cart.push({ codigo: p.codigo, nome: p.nome, linha: p.linha, quantidade: qty, imagem: imagens[0] || '', preco_original: p.preco || null, preco_final: precoFinal || null, ipi: p.ipi || null, desconto: session?.desconto || 0 });
+      cart.push({ codigo: p.codigo, nome: p.nome, linha: p.linha, quantidade: qty, imagem: imagens[0] || p.imagem || '', preco_original: p.preco || null, preco_final: precoFinal || null, ipi: p.ipi || null, desconto: session?.desconto || 0 });
       localStorage.setItem('aex_cart', JSON.stringify(cart));
       updateCartFab();
       toast('✅ ' + qty + 'x ' + p.codigo + ' adicionado!');
@@ -317,7 +318,7 @@
       }
       grid.innerHTML = vis.map(p => {
         const imagens = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
-        const img = imagens[0] || '';
+        const img = imagens[0] || p.imagem || '';
         const linhaLabel = LINE_LABELS[p.linha] || p.linha;
         const already = inCart(p.codigo);
         return `
@@ -381,7 +382,7 @@
 
       // Imagens — usa dataset para evitar escape de src no onclick
       const img = document.getElementById('m-img');
-      img.src = imagens[0] || '';
+      img.src = imagens[0] || p.imagem || '';
       const thumbs = document.getElementById('m-thumbs');
       thumbs.innerHTML = '';
       imagens.forEach((src, i) => {
