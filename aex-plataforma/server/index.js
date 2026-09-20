@@ -37,22 +37,14 @@ app.use('/api/orders',   require('./routes/orders'));
 app.use('/api/clients',  require('./routes/clients'));
 app.use('/api/admin',    require('./routes/admin'));
 
-// ── Proxy de imagens de produto ───────────────────────────────────────────────
-// Evita bloqueio de hotlink/cross-origin no Chrome ao servir via mesmo domínio
+// ── Imagens de produto (servidas localmente) ──────────────────────────────────
 app.get('/img/:filename', (req, res) => {
   const filename = req.params.filename;
-  if (!/^[\w.-]+-01\.png$/.test(filename)) return res.status(400).end();
-  const url = `https://www.aexautomotive.com.br/assets/produtos/${filename}`;
-  const https = require('https');
-  https.get(url, (upstream) => {
-    if (upstream.statusCode !== 200) {
-      upstream.resume();
-      return res.status(upstream.statusCode).end();
-    }
-    res.setHeader('Content-Type', 'image/png');
-    res.setHeader('Cache-Control', 'public, max-age=86400');
-    upstream.pipe(res);
-  }).on('error', () => res.status(502).end());
+  if (!/^[\w.-]+-\d+\.png$/i.test(filename)) return res.status(400).end();
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(__dirname, '../public/assets/produtos', filename), (err) => {
+    if (err) res.status(404).end();
+  });
 });
 
 // ── Rota de saúde ─────────────────────────────────────────────────────────────
