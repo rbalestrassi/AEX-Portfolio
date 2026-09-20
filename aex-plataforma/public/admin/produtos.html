@@ -30,7 +30,7 @@
     <div class="aex-nav-links">
       <a href="/admin">Dashboard</a>
       <a href="/admin/pedidos">Pedidos</a>
-      <a href="/admin/clientes">Clientes</a>
+      <a href="/admin/clientes">Clientes <span id="nav-pend" hidden style="background:var(--aex-red);color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700;vertical-align:middle"></span></a>
       <a href="/admin/produtos" class="active">Produtos</a>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
     </div>
@@ -151,6 +151,13 @@
         document.getElementById('loading').textContent = 'Erro ao carregar produtos.';
       });
     });
+
+    fetch('/api/admin/dashboard').then(r => r.json()).then(d => {
+      if (d.cadastros_pendentes > 0) {
+        const nb = document.getElementById('nav-pend');
+        nb.textContent = d.cadastros_pendentes; nb.hidden = false;
+      }
+    }).catch(() => {});
   </script>
 </body>
 </html>

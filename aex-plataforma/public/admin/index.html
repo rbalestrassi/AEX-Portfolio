@@ -26,7 +26,7 @@
     <div class="aex-nav-links admin-nav">
       <a href="/admin" class="active">Dashboard</a>
       <a href="/admin/pedidos">Pedidos</a>
-      <a href="/admin/clientes">Clientes</a>
+      <a href="/admin/clientes">Clientes <span id="nav-pend" hidden style="background:var(--aex-red);color:#fff;border-radius:20px;padding:1px 7px;font-size:11px;font-weight:700;vertical-align:middle"></span></a>
       <a href="/admin/produtos">Produtos</a>
       <span id="admin-nome" class="text-muted" style="font-size:13px"></span>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
@@ -99,6 +99,8 @@
       if (d.cadastros_pendentes > 0) {
         document.getElementById('menu-pendentes').innerHTML =
           `Aprovar cadastros <span class="badge-alert">${d.cadastros_pendentes}</span>`;
+        const nb = document.getElementById('nav-pend');
+        nb.textContent = d.cadastros_pendentes; nb.hidden = false;
       }
     }).catch(() => {});
   </script>
