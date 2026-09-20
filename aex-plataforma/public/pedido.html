@@ -240,15 +240,16 @@
           if (r.status === 401) { location.href = '/login?next=/pedido'; return; }
           toast(d.error, true); btn.disabled = false; btn.textContent = '✅ Confirmar Pedido'; return;
         }
+        const cartSnapshot = cart.map(i => ({ ...i }));
         localStorage.removeItem('aex_cart');
-        showConfirmacao(d.pedido);
+        showConfirmacao(d.pedido, cartSnapshot);
       } catch {
         toast('Erro de conexão. Tente novamente.', true);
         btn.disabled = false; btn.textContent = '✅ Confirmar Pedido';
       }
     }
 
-    function showConfirmacao(pedido) {
+    function showConfirmacao(pedido, cartItems) {
       document.getElementById('cart-content').hidden = true;
       document.getElementById('cart-empty').hidden   = true;
       document.getElementById('confirmacao').hidden  = false;
@@ -256,13 +257,13 @@
 
       document.getElementById('conf-numero').textContent = 'Nº ' + pedido.numero;
 
-      const itens = (() => { try { return typeof pedido.itens === 'string' ? JSON.parse(pedido.itens) : (pedido.itens || []); } catch { return []; } })();
-      const temPreco = itens.some(i => i.preco_unitario);
+      const itens = cartItems || [];
+      const temPreco = itens.some(i => i.preco_final);
       let totalFinal = 0;
 
       document.getElementById('conf-itens').innerHTML = itens.map(i => {
         const qty = i.quantidade || 1;
-        const sub = i.preco_unitario ? i.preco_unitario * qty : null;
+        const sub = i.preco_final ? i.preco_final * qty : null;
         if (sub) totalFinal += sub;
         return `
           <div class="confirm-item">
