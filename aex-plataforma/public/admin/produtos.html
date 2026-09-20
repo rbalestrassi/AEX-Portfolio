@@ -105,14 +105,17 @@
             <div class="prod-info">
               <strong>${esc(p.nome)}</strong>
               <span>${esc(p.linha || '')}${p.modelo_compressor ? ' · ' + esc(p.modelo_compressor) : ''}${p.tensao ? ' · ' + esc(p.tensao) : ''}</span>
-              <span style="font-size:11px;color:var(--aex-muted)">${p.part_number ? '<b style="color:var(--aex-text)">Cód. Interno:</b> ' + esc(p.part_number) + ' &nbsp;|&nbsp; ' : ''}<b style="color:var(--aex-text)">Cód. Fabricante:</b> ${esc(p.codigo)}</span>
+              <span style="font-size:11px;color:var(--aex-muted)">Cód. Fab. ${esc(p.codigo)}</span>
               <span>${esc(p.veiculos || '')}</span>
             </div>
             <div class="prod-preco">
               <div class="val">${fmtPreco(p.preco)}</div>
               ${p.ipi ? `<div class="ipi">+IPI ${parseFloat(p.ipi).toFixed(2).replace('.',',')}%</div>` : ''}
             </div>
-            <span class="prod-code">${esc(p.codigo)}</span>
+            <div class="prod-code" style="text-align:right">
+              ${p.part_number ? `<span style="display:block;font-weight:700;font-size:13px">${esc(p.part_number)}</span>` : ''}
+              <span style="display:block;font-size:11px;color:var(--aex-muted)">${esc(p.codigo)}</span>
+            </div>
           </div>
         `;
       }).join('');
