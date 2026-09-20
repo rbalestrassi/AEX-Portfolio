@@ -118,7 +118,7 @@ async function syncProdutos() {
           parsePreco(row['Valor']),
           parseIPI(row['IPI']),
           row['Marca'] || 'AEX AUTOMOTIVE AIR',
-          row['Part-number'] || null,
+          row['Cod. Interno'] || row['Part-number'] || null,
           row['Veículos'] || null,
           row['Óleo'] || 'PAG 46',
           row['Gás'] || 'R134a',
