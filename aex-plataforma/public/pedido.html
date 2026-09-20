@@ -21,8 +21,13 @@
     .qty-ctrl span { min-width: 24px; text-align: center; font-weight: 600; }
     .remove-btn { background: none; border: none; color: var(--aex-muted); cursor: pointer; font-size: 18px; padding: 4px; }
     .remove-btn:hover { color: var(--aex-red); }
+    .item-price { text-align: right; min-width: 90px; }
+    .item-price .unit { font-size: 13px; font-weight: 600; color: var(--aex-success); white-space: nowrap; }
+    .item-price .subtotal { font-size: 11px; color: var(--aex-muted); white-space: nowrap; }
     .summary-row { display: flex; justify-content: space-between; padding: 8px 0; font-size: 14px; }
-    .summary-row.total { font-size: 16px; font-weight: 700; border-top: 1px solid var(--aex-border); margin-top: 8px; padding-top: 12px; }
+    .summary-row.total { font-size: 18px; font-weight: 800; border-top: 2px solid var(--aex-border); margin-top: 8px; padding-top: 14px; color: var(--aex-success); }
+    .summary-row.total span:first-child { color: var(--aex-text); }
+    .ipi-note { font-size: 12px; color: var(--aex-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--aex-border); }
     .empty-cart { text-align: center; padding: 48px; color: var(--aex-muted); }
   </style>
 </head>
@@ -61,11 +66,13 @@
       <div class="card mb-4">
         <h3 style="margin-bottom:16px;font-size:16px">Resumo</h3>
         <div class="summary-row"><span>Total de itens</span><span id="total-itens">—</span></div>
+        <div class="summary-row" id="row-subtotal" hidden><span>Subtotal (tabela)</span><span id="val-subtotal">—</span></div>
         <div class="summary-row" id="row-desconto" hidden>
           <span id="label-desconto">Desconto</span>
           <span id="val-desconto" class="text-success">—</span>
         </div>
-        <div class="summary-row total"><span>Compressores</span><span id="total-pcs">—</span></div>
+        <div class="summary-row total"><span>Total</span><span id="total-valor">—</span></div>
+        <div class="ipi-note" id="ipi-note" hidden>⚠️ IPI não incluso — incide sobre o valor final conforme nota fiscal.</div>
       </div>
 
       <button class="btn btn-primary" style="width:100%;padding:14px;font-size:16px" id="btn-finalizar" onclick="finalizar()">
@@ -80,6 +87,10 @@
   <script>
     let session = null;
     let cart = (() => { try { return JSON.parse(localStorage.getItem('aex_cart') || '[]'); } catch { return []; } })();
+
+    function fmtBRL(v) {
+      return 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
 
     function toast(msg, err) {
       const el = document.getElementById('aex-toast');
@@ -118,17 +129,35 @@
       document.getElementById('cart-content').hidden = false;
 
       const totalPcs = cart.reduce((s, i) => s + (i.quantidade || 1), 0);
-      document.getElementById('total-itens').textContent = cart.length + ' modelo(s)';
-      document.getElementById('total-pcs').textContent = totalPcs + ' unidade(s)';
+      document.getElementById('total-itens').textContent = cart.length + ' modelo(s) · ' + totalPcs + ' unidade(s)';
 
-      if (session?.desconto > 0) {
-        document.getElementById('row-desconto').hidden = false;
-        document.getElementById('label-desconto').textContent = `Desconto (${session.desconto}%)`;
-        document.getElementById('val-desconto').textContent = `-${session.desconto}%`;
+      // Cálculo de totais
+      const temPreco = cart.some(i => i.preco_final);
+      if (temPreco) {
+        const subtotalOriginal = cart.reduce((s, i) => s + ((i.preco_original || 0) * (i.quantidade || 1)), 0);
+        const totalFinal       = cart.reduce((s, i) => s + ((i.preco_final    || 0) * (i.quantidade || 1)), 0);
+        const descontoValor    = subtotalOriginal - totalFinal;
+        const desconto         = cart[0]?.desconto || 0;
+
+        if (desconto > 0 && descontoValor > 0) {
+          document.getElementById('row-subtotal').hidden = false;
+          document.getElementById('val-subtotal').textContent = fmtBRL(subtotalOriginal);
+          document.getElementById('row-desconto').hidden = false;
+          document.getElementById('label-desconto').textContent = `Desconto (${desconto}%)`;
+          document.getElementById('val-desconto').textContent = `− ${fmtBRL(descontoValor)}`;
+        }
+        document.getElementById('total-valor').textContent = fmtBRL(totalFinal);
+        document.getElementById('ipi-note').hidden = false;
+      } else {
+        document.getElementById('total-valor').textContent = totalPcs + ' unidade(s)';
       }
 
       const el = document.getElementById('cart-items');
-      el.innerHTML = cart.map(item => `
+      el.innerHTML = cart.map(item => {
+        const qty      = item.quantidade || 1;
+        const unitario = item.preco_final || null;
+        const subTotal = unitario ? unitario * qty : null;
+        return `
         <div class="cart-item">
           <img src="${item.imagem || ''}" alt="${item.nome}" onerror="this.src=''">
           <div class="cart-item-info">
@@ -137,12 +166,14 @@
           </div>
           <div class="qty-ctrl">
             <button onclick="updateQty('${item.codigo}', -1)">−</button>
-            <span>${item.quantidade || 1}</span>
+            <span>${qty}</span>
             <button onclick="updateQty('${item.codigo}', +1)">+</button>
           </div>
+          ${unitario ? `<div class="item-price"><div class="unit">${fmtBRL(unitario)}</div>${qty > 1 ? `<div class="subtotal">${fmtBRL(subTotal)}</div>` : ''}</div>` : ''}
           <button class="remove-btn" onclick="removeItem('${item.codigo}')" title="Remover">✕</button>
         </div>
-      `).join('');
+        `;
+      }).join('');
     }
 
     async function finalizar() {
@@ -156,11 +187,16 @@
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             itens: cart.map(i => ({
-              codigo:     i.codigo,
-              nome:       i.nome,
-              quantidade: i.quantidade || 1,
-              imagem:     i.imagem || '',
+              codigo:        i.codigo,
+              nome:          i.nome,
+              quantidade:    i.quantidade || 1,
+              imagem:        i.imagem || '',
+              preco_unitario: i.preco_final || null,
+              preco_original: i.preco_original || null,
+              ipi:           i.ipi || null,
             })),
+            desconto_percentual: cart[0]?.desconto || 0,
+            valor_total: cart.reduce((s, i) => s + ((i.preco_final || 0) * (i.quantidade || 1)), 0) || null,
             observacao: document.getElementById('obs').value,
           }),
         });
