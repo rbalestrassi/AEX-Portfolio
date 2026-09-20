@@ -335,7 +335,7 @@
             </div>
             <div class="prod-body">
               <div class="prod-line">${linhaLabel}</div>
-              <div class="prod-code">${p.codigo}</div>
+              <div class="prod-code">${p.part_number || p.codigo}</div>
               <div class="prod-name">${p.nome}</div>
               <div class="prod-meta">${p.modelo_compressor || ''} ${p.tensao ? '· ' + p.tensao : ''}</div>
               <div class="prod-price-block">
@@ -367,7 +367,7 @@
         : (LINE_LABELS[p.linha] || p.linha);
 
       document.getElementById('m-name').textContent = p.nome;
-      document.getElementById('m-code').textContent = p.codigo + (p.codigo_oem ? ' · OEM: ' + p.codigo_oem : '');
+      document.getElementById('m-code').textContent = (p.part_number || p.codigo) + (p.codigo_oem ? ' · OEM: ' + p.codigo_oem : '');
       document.getElementById('m-line').textContent = linhaLabel;
       document.getElementById('m-vehicles').textContent = p.veiculos || '';
 
