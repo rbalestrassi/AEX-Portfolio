@@ -151,7 +151,7 @@
     <div class="modal-box" id="modal-box">
       <div style="position:relative">
         <div class="modal-imgs">
-          <img id="m-img" src="" alt="">
+          <img id="m-img" src="" alt="" referrerpolicy="no-referrer">
         </div>
         <div class="img-thumbs" id="m-thumbs"></div>
         <button class="modal-close" onclick="closeModalForce()">✕</button>
@@ -324,7 +324,7 @@
         return `
           <div class="prod-card" onclick="openModal(${p.id})">
             <div class="prod-img">
-              <img src="${img}" alt="${p.nome}" loading="lazy" onerror="this.style.display='none'">
+              <img src="${img}" alt="${p.nome}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">
             </div>
             <div class="prod-body">
               <div class="prod-line">${linhaLabel}</div>
