@@ -155,6 +155,7 @@
         <button class="btn btn-primary" style="width:100%" id="m-add-btn" onclick="addFromModal()">
           🛒 Adicionar ao pedido
         </button>
+        <div id="m-admin-note" hidden style="text-align:center;font-size:13px;color:var(--aex-muted);margin-top:8px">Visualização admin — pedidos são feitos por clientes.</div>
       </div>
     </div>
   </div>
@@ -288,10 +289,11 @@
                     ? ''
                     : p.preco ? '<span class="prod-price-login">Entre para ver o preço</span>' : ''}
               </div>
+              ${session?.tipo === 'admin' ? '' : `
               <button class="btn btn-primary btn-sm btn-add ${already ? 'added' : ''}"
                 onclick="event.stopPropagation(); addToCartById(${p.id})">
                 ${already ? '✓ No carrinho' : '+ Adicionar ao pedido'}
-              </button>
+              </button>`}
             </div>
           </div>
         `;
@@ -362,7 +364,15 @@
       }
 
       // Botão carrinho
+      const adminNote = document.getElementById('m-admin-note');
       const btn = document.getElementById('m-add-btn');
+      if (session?.tipo === 'admin') {
+        btn.hidden = true;
+        adminNote.hidden = false;
+      } else {
+        btn.hidden = false;
+        adminNote.hidden = true;
+      }
       if (inCart(p.codigo)) {
         btn.textContent = '✓ Já no carrinho';
         btn.classList.add('added');
