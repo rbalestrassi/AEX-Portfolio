@@ -4,9 +4,9 @@
   --aex-dark:    #111111;
   --aex-card:    #1a1a1a;
   --aex-border:  #2a2a2a;
-  --aex-red:     #c8102e;
-  --aex-red-h:   #e01535;
-  --aex-text:    #f0f0f0;
+  --aex-red:     #f5f4f4;
+  --aex-red-h:   #ffffff;
+  --aex-text:    #f5f4f4;
   --aex-muted:   #888888;
   --aex-success: #22c55e;
   --aex-warn:    #f59e0b;
@@ -19,7 +19,7 @@
 body {
   background: var(--aex-black);
   color: var(--aex-text);
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'Barlow', 'Inter', system-ui, sans-serif;
   min-height: 100vh;
 }
 
@@ -54,7 +54,7 @@ body {
   font-size: 14px; font-weight: 600; cursor: pointer;
   border: none; transition: .2s; text-decoration: none;
 }
-.btn-primary { background: var(--aex-red); color: #fff; }
+.btn-primary { background: var(--aex-red); color: #111111; }
 .btn-primary:hover { background: var(--aex-red-h); }
 .btn-secondary { background: var(--aex-card); color: var(--aex-text); border: 1px solid var(--aex-border); }
 .btn-secondary:hover { border-color: var(--aex-red); }
@@ -136,7 +136,7 @@ body {
 .step-label { font-size: 11px; color: var(--aex-muted); margin-top: 6px; text-align: center; }
 .progress-step.done .step-dot   { background: var(--aex-success); border-color: var(--aex-success); color: #000; }
 .progress-step.done::after      { background: var(--aex-success); }
-.progress-step.active .step-dot { background: var(--aex-red); border-color: var(--aex-red); color: #fff; }
+.progress-step.active .step-dot { background: var(--aex-red); border-color: var(--aex-red); color: #111111; }
 .progress-step.active .step-label { color: var(--aex-text); font-weight: 600; }
 
 /* ── Toast ── */

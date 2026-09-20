@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AEX Air Automotive — Catálogo B2B</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/aex-styles.css">
   <style>
     /* ── Hero ── */
-    .hero { background: linear-gradient(135deg, #0a0a0a 0%, #1a0005 100%); padding: 64px 24px; text-align:center; border-bottom:1px solid var(--aex-border); }
+    .hero { background: linear-gradient(135deg, #0a0a0a 0%, #111419 100%); padding: 64px 24px; text-align:center; border-bottom:1px solid var(--aex-border); }
     .hero h1 { font-size: clamp(28px, 5vw, 52px); font-weight:800; margin-bottom:12px; }
     .hero h1 span { color: var(--aex-red); }
     .hero p { color: var(--aex-muted); font-size:16px; max-width:520px; margin:0 auto 28px; }
@@ -22,7 +22,7 @@
     .filters { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; }
     .filter-btn { white-space:nowrap; padding:7px 16px; border-radius:20px; border:1px solid var(--aex-border); background:transparent; color:var(--aex-muted); cursor:pointer; font-size:13px; font-weight:500; transition:.2s; }
     .filter-btn:hover { color:var(--aex-text); border-color:#555; }
-    .filter-btn.active { background:var(--aex-red); color:#fff; border-color:var(--aex-red); }
+    .filter-btn.active { background:var(--aex-red); color:#111111; border-color:var(--aex-red); }
 
     /* ── Grid de produtos ── */
     .products-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); gap:16px; padding:24px; }
@@ -34,22 +34,22 @@
     .prod-code { font-size:11px; color:var(--aex-muted); margin-bottom:4px; }
     .prod-name { font-size:14px; font-weight:600; line-height:1.3; margin-bottom:8px; }
     .prod-meta { font-size:12px; color:var(--aex-muted); }
-    .prod-line { display:inline-block; font-size:11px; font-weight:600; padding:3px 8px; border-radius:12px; background:rgba(200,16,46,.15); color:var(--aex-red); margin-bottom:8px; }
+    .prod-line { display:inline-block; font-size:11px; font-weight:600; padding:3px 8px; border-radius:12px; background:rgba(245,244,244,.1); color:var(--aex-red); margin-bottom:8px; }
     .btn-add { width:100%; margin-top:10px; }
     .btn-add.added { background:var(--aex-success)!important; }
 
     /* ── Carrinho flutuante ── */
     #cart-fab {
       position:fixed; bottom:24px; right:24px;
-      background:var(--aex-red); color:#fff;
+      background:var(--aex-red); color:#111111;
       border:none; border-radius:50px; padding:14px 20px;
       font-size:15px; font-weight:700; cursor:pointer;
-      box-shadow:0 4px 16px rgba(200,16,46,.5);
+      box-shadow:0 4px 20px rgba(0,0,0,.5);
       display:flex; align-items:center; gap:10px;
       transition:.3s; z-index:200;
     }
     #cart-fab.hidden { transform:translateY(100px); opacity:0; pointer-events:none; }
-    #cart-count { background:#fff; color:var(--aex-red); border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; }
+    #cart-count { background:#111111; color:#f5f4f4; border-radius:50%; width:22px; height:22px; display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:800; }
 
     /* ── Modal produto ── */
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,.85); z-index:500; display:flex; align-items:center; justify-content:center; padding:16px; }
