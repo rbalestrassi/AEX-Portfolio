@@ -105,7 +105,7 @@
             <div class="prod-info">
               <strong>${esc(p.nome)}</strong>
               <span>${esc(p.linha || '')}${p.modelo_compressor ? ' · ' + esc(p.modelo_compressor) : ''}${p.tensao ? ' · ' + esc(p.tensao) : ''}</span>
-              <span style="font-size:11px;color:var(--aex-muted)"><b style="color:var(--aex-text)">Cód. Interno:</b> ${esc(p.codigo)}${p.part_number ? ' &nbsp;|&nbsp; <b style="color:var(--aex-text)">Part-number:</b> ' + esc(p.part_number) : ''}</span>
+              <span style="font-size:11px;color:var(--aex-muted)">${p.part_number ? '<b style="color:var(--aex-text)">Cód. Interno:</b> ' + esc(p.part_number) + ' &nbsp;|&nbsp; ' : ''}<b style="color:var(--aex-text)">Cód. Fabricante:</b> ${esc(p.codigo)}</span>
               <span>${esc(p.veiculos || '')}</span>
             </div>
             <div class="prod-preco">
