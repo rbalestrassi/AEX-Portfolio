@@ -26,8 +26,8 @@
     <div class="card">
       <form id="form-cad">
         <div class="form-group">
-          <label>CNPJ *</label>
-          <input type="text" id="cnpj" placeholder="00.000.000/0001-00" required maxlength="18">
+          <label>CNPJ / CPF *</label>
+          <input type="text" id="cnpj" placeholder="CNPJ ou CPF" required maxlength="18">
         </div>
         <div class="form-group">
           <label>Razão Social *</label>
@@ -79,13 +79,23 @@
   <div id="aex-toast"></div>
 
   <script>
-    // Máscara CNPJ
+    // Máscara CNPJ ou CPF (detecta pelo número de dígitos)
     document.getElementById('cnpj').addEventListener('input', e => {
       let v = e.target.value.replace(/\D/g, '').slice(0, 14);
-      if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-      else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})/, '$1.$2.$3/$4');
-      else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{3})/, '$1.$2.$3');
-      else if (v.length > 2) v = v.replace(/^(\d{2})(\d{3})/, '$1.$2');
+      if (v.length <= 11) {
+        // CPF: 000.000.000-00
+        if (v.length > 9) v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+        else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{3})/, '$1.$2.$3');
+        else if (v.length > 3) v = v.replace(/^(\d{3})(\d{3})/, '$1.$2');
+        e.target.maxLength = 14;
+      } else {
+        // CNPJ: 00.000.000/0001-00
+        if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+        else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})/, '$1.$2.$3/$4');
+        else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{3})/, '$1.$2.$3');
+        else if (v.length > 2) v = v.replace(/^(\d{2})(\d{3})/, '$1.$2');
+        e.target.maxLength = 18;
+      }
       e.target.value = v;
     });
 
