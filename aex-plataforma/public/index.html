@@ -69,6 +69,17 @@
     .img-thumbs img.active { border-color:var(--aex-red); }
     .modal-close { position:absolute; top:12px; right:12px; background:rgba(0,0,0,.7); color:#fff; border:none; border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; }
 
+    /* ── Preço no card ── */
+    .prod-price-block { margin:8px 0 4px; }
+    .prod-price { font-size:16px; font-weight:700; color:var(--aex-success); }
+    .prod-price-ipi { font-size:11px; color:var(--aex-muted); margin-left:4px; }
+    .prod-price-login { font-size:12px; color:var(--aex-muted); font-style:italic; }
+
+    /* ── Preço no modal ── */
+    .modal-preco { background:rgba(255,255,255,.04); border-radius:8px; padding:14px 16px; margin-bottom:16px; display:flex; flex-direction:column; gap:4px; }
+    .modal-preco .preco-final { font-size:22px; font-weight:800; color:var(--aex-success); }
+    .modal-preco .preco-info { font-size:12px; color:var(--aex-muted); }
+
     /* ── Navbar sessão ── */
     .nav-user { font-size:13px; color:var(--aex-muted); }
   </style>
@@ -138,6 +149,7 @@
         <div class="prod-line" id="m-line"></div>
         <div class="modal-title" id="m-name"></div>
         <div class="modal-code" id="m-code"></div>
+        <div class="modal-preco" id="m-preco" hidden></div>
         <div class="specs-grid" id="m-specs"></div>
         <div class="modal-vehicles" id="m-vehicles"></div>
         <button class="btn btn-primary" style="width:100%" id="m-add-btn" onclick="addFromModal()">
@@ -155,6 +167,14 @@
     let session = null;
     let currentProd = null;
     let cart = (() => { try { return JSON.parse(localStorage.getItem('aex_cart') || '[]'); } catch { return []; } })();
+
+    function fmtBRL(v) {
+      return 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+    function calcPreco(preco) {
+      if (!preco || !session?.desconto) return parseFloat(preco) || 0;
+      return Math.round(parseFloat(preco) * (1 - session.desconto / 100) * 100) / 100;
+    }
 
     const LINE_LABELS = {
       leve:'Linha Leve', pesada:'Linha Pesada', agricola:'Linha Agrícola',
@@ -207,7 +227,8 @@
         toast('Já está no carrinho.'); return;
       }
       const imagens = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
-      cart.push({ codigo: p.codigo, nome: p.nome, linha: p.linha, quantidade: 1, imagem: imagens[0] || '' });
+      const precoFinal = calcPreco(p.preco);
+      cart.push({ codigo: p.codigo, nome: p.nome, linha: p.linha, quantidade: 1, imagem: imagens[0] || '', preco_original: p.preco || null, preco_final: precoFinal || null, ipi: p.ipi || null, desconto: session?.desconto || 0 });
       localStorage.setItem('aex_cart', JSON.stringify(cart));
       updateCartFab();
       toast('✅ ' + p.codigo + ' adicionado!');
@@ -260,6 +281,13 @@
               <div class="prod-code">${p.codigo}</div>
               <div class="prod-name">${p.nome}</div>
               <div class="prod-meta">${p.modelo_compressor || ''} ${p.tensao ? '· ' + p.tensao : ''}</div>
+              <div class="prod-price-block">
+                ${session?.status === 'aprovado' && p.preco
+                  ? `<span class="prod-price">${fmtBRL(calcPreco(p.preco))}</span><span class="prod-price-ipi">+IPI ${parseFloat(p.ipi||3.25).toFixed(2).replace('.',',')}%</span>${session.desconto > 0 ? `<div style="font-size:11px;color:var(--aex-muted)">Desconto ${session.desconto}% aplicado</div>` : ''}`
+                  : session && session.status !== 'aprovado'
+                    ? ''
+                    : p.preco ? '<span class="prod-price-login">Entre para ver o preço</span>' : ''}
+              </div>
               <button class="btn btn-primary btn-sm btn-add ${already ? 'added' : ''}"
                 onclick="event.stopPropagation(); addToCartById(${p.id})">
                 ${already ? '✓ No carrinho' : '+ Adicionar ao pedido'}
@@ -316,6 +344,23 @@
       });
       thumbs.hidden = imagens.length <= 1;
 
+      // Preço no modal
+      const mPreco = document.getElementById('m-preco');
+      if (session?.status === 'aprovado' && p.preco) {
+        const final = calcPreco(p.preco);
+        const ipi   = parseFloat(p.ipi || 3.25);
+        const comIpi = Math.round(final * (1 + ipi / 100) * 100) / 100;
+        let html = `<div class="preco-final">${fmtBRL(final)}</div>`;
+        if (session.desconto > 0) {
+          html += `<div class="preco-info">Tabela: ${fmtBRL(p.preco)} · Desconto ${session.desconto}% aplicado</div>`;
+        }
+        html += `<div class="preco-info">+IPI ${ipi.toFixed(2).replace('.',',')}% = ${fmtBRL(comIpi)} c/ IPI</div>`;
+        mPreco.innerHTML = html;
+        mPreco.hidden = false;
+      } else {
+        mPreco.hidden = true;
+      }
+
       // Botão carrinho
       const btn = document.getElementById('m-add-btn');
       if (inCart(p.codigo)) {
@@ -348,25 +393,18 @@
     // Esc para fechar modal
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModalForce(); });
 
-    async function loadProdutos() {
-      try {
-        const r = await fetch('/api/products');
-        produtos = await r.json();
-        document.getElementById('total-count').textContent = '+' + produtos.length;
-        renderGrid();
-      } catch {
-        document.getElementById('products-grid').innerHTML =
-          '<div style="grid-column:1/-1;text-align:center;padding:48px;color:var(--aex-muted)">Erro ao carregar catálogo.</div>';
-      }
-    }
-
-    // Init
-    fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
-      session = d;
+    // Init — carrega sessão e produtos juntos para renderizar preço correto de imediato
+    Promise.all([
+      fetch('/api/auth/me').then(r => r.ok ? r.json() : null).catch(() => null),
+      fetch('/api/products').then(r => r.json()).catch(() => []),
+    ]).then(([me, prods]) => {
+      session  = me;
+      produtos = Array.isArray(prods) ? prods : [];
       updateNav();
       updateCartFab();
+      document.getElementById('total-count').textContent = '+' + produtos.length;
+      renderGrid();
     });
-    loadProdutos();
   </script>
 </body>
 </html>
