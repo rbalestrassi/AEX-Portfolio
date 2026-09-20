@@ -19,6 +19,10 @@
     .empty-msg { text-align: center; padding: 64px; color: var(--aex-muted); }
     .toggle-btn { background: none; border: none; color: var(--aex-red); cursor: pointer; font-size: 13px; font-weight: 600; }
     .btn-novo { position: fixed; bottom: 24px; right: 24px; border-radius: 50px; padding: 14px 24px; box-shadow: 0 4px 16px rgba(200,16,46,0.4); }
+    .pedido-valor { font-size:18px; font-weight:800; color:var(--aex-success); }
+    .item-preco { margin-left:auto; text-align:right; white-space:nowrap; }
+    .item-preco .val { font-weight:600; color:var(--aex-success); font-size:13px; }
+    .item-preco .qty { font-size:12px; color:var(--aex-muted); }
   </style>
 </head>
 <body>
@@ -50,6 +54,10 @@
   <div id="aex-toast"></div>
 
   <script>
+    function fmtBRL(v) {
+      return 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
     const STEPS = ['recebido','separando','enviado','entregue'];
     const STEP_LABELS = { recebido:'Recebido', separando:'Separando', enviado:'Enviado', entregue:'Entregue' };
 
@@ -85,6 +93,9 @@
       const totalPcs = itens.reduce((s, i) => s + (i.quantidade || 1), 0);
       const id = 'p' + p.id;
 
+      const totalValor = itens.reduce((s, i) => s + ((i.preco_unitario || 0) * (i.quantidade || 1)), 0);
+      const temPreco   = itens.some(i => i.preco_unitario);
+
       return `
         <div class="card pedido-card">
           <div class="pedido-header">
@@ -92,7 +103,10 @@
               <div class="pedido-numero">📦 ${p.numero}</div>
               <div class="pedido-data">${data} às ${hora} · ${itens.length} modelo(s) · ${totalPcs} unidade(s)</div>
             </div>
-            <span class="badge badge-${p.status}">${STEP_LABELS[p.status]}</span>
+            <div style="text-align:right">
+              <span class="badge badge-${p.status}">${STEP_LABELS[p.status]}</span>
+              ${temPreco ? `<div class="pedido-valor" style="margin-top:4px">${fmtBRL(totalValor)}</div>` : ''}
+            </div>
           </div>
 
           ${progressBar(p.status)}
@@ -101,13 +115,19 @@
             Ver itens ▾
           </button>
           <div id="${id}-itens" class="itens-list" hidden>
-            ${itens.map(i => `
+            ${itens.map(i => {
+              const qty = i.quantidade || 1;
+              const sub = i.preco_unitario ? i.preco_unitario * qty : null;
+              return `
               <div class="item-row">
                 <img src="${i.imagem || ''}" alt="${i.nome}" onerror="this.style.display='none'">
                 <span><strong>${i.codigo}</strong> — ${i.nome}</span>
-                <span style="margin-left:auto;font-weight:600">${i.quantidade || 1}x</span>
-              </div>
-            `).join('')}
+                <div class="item-preco">
+                  <div class="qty">${qty}x</div>
+                  ${sub ? `<div class="val">${fmtBRL(sub)}</div>` : ''}
+                </div>
+              </div>`;
+            }).join('')}
           </div>
 
           ${p.observacao ? `<div class="pedido-obs"><strong>Obs:</strong> ${p.observacao}</div>` : ''}

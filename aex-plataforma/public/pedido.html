@@ -29,6 +29,23 @@
     .summary-row.total span:first-child { color: var(--aex-text); }
     .ipi-note { font-size: 12px; color: var(--aex-muted); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--aex-border); }
     .empty-cart { text-align: center; padding: 48px; color: var(--aex-muted); }
+
+    /* ── Confirmação ── */
+    .confirm-hero { text-align:center; padding:32px 0 24px; }
+    .confirm-icon { font-size:64px; margin-bottom:12px; }
+    .confirm-titulo { font-size:24px; font-weight:800; margin-bottom:4px; }
+    .confirm-numero { font-size:14px; color:var(--aex-muted); margin-bottom:24px; }
+    .confirm-itens { margin:16px 0; }
+    .confirm-item { display:flex; align-items:center; gap:10px; padding:10px 0; border-bottom:1px solid var(--aex-border); font-size:13px; }
+    .confirm-item:last-child { border-bottom:none; }
+    .confirm-item img { width:40px; height:40px; object-fit:cover; border-radius:6px; background:#222; flex-shrink:0; }
+    .confirm-item .info { flex:1; }
+    .confirm-item .info strong { display:block; }
+    .confirm-item .info span { color:var(--aex-muted); font-size:12px; }
+    .confirm-item .preco { text-align:right; font-weight:700; color:var(--aex-success); white-space:nowrap; }
+    .confirm-total { display:flex; justify-content:space-between; padding:14px 0 0; font-size:18px; font-weight:800; border-top:2px solid var(--aex-border); margin-top:8px; }
+    .confirm-total span:last-child { color:var(--aex-success); }
+    .confirm-actions { display:flex; flex-direction:column; gap:10px; margin-top:24px; }
   </style>
 </head>
 <body>
@@ -43,6 +60,24 @@
 
   <div class="container" style="max-width:720px">
     <h1 class="page-title">Finalizar Pedido</h1>
+
+    <!-- Tela de confirmação -->
+    <div id="confirmacao" hidden>
+      <div class="card">
+        <div class="confirm-hero">
+          <div class="confirm-icon">✅</div>
+          <div class="confirm-titulo">Pedido confirmado!</div>
+          <div class="confirm-numero" id="conf-numero"></div>
+        </div>
+        <div class="confirm-itens" id="conf-itens"></div>
+        <div class="confirm-total"><span>Total</span><span id="conf-total"></span></div>
+        <div style="font-size:12px;color:var(--aex-muted);margin-top:6px">⚠️ IPI não incluso — incide conforme nota fiscal.</div>
+        <div class="confirm-actions">
+          <a href="/meus-pedidos" class="btn btn-primary" style="justify-content:center">📋 Ver meus pedidos</a>
+          <a href="/" class="btn btn-secondary" style="justify-content:center">← Continuar comprando</a>
+        </div>
+      </div>
+    </div>
 
     <div id="cart-empty" class="empty-cart" hidden>
       <p style="font-size:40px">🛒</p>
@@ -206,12 +241,43 @@
           toast(d.error, true); btn.disabled = false; btn.textContent = '✅ Confirmar Pedido'; return;
         }
         localStorage.removeItem('aex_cart');
-        toast('✅ Pedido ' + d.pedido.numero + ' confirmado!');
-        setTimeout(() => location.href = '/meus-pedidos', 2000);
+        showConfirmacao(d.pedido);
       } catch {
         toast('Erro de conexão. Tente novamente.', true);
         btn.disabled = false; btn.textContent = '✅ Confirmar Pedido';
       }
+    }
+
+    function showConfirmacao(pedido) {
+      document.getElementById('cart-content').hidden = true;
+      document.getElementById('cart-empty').hidden   = true;
+      document.getElementById('confirmacao').hidden  = false;
+      window.scrollTo(0, 0);
+
+      document.getElementById('conf-numero').textContent = 'Nº ' + pedido.numero;
+
+      const itens = (() => { try { return typeof pedido.itens === 'string' ? JSON.parse(pedido.itens) : (pedido.itens || []); } catch { return []; } })();
+      const temPreco = itens.some(i => i.preco_unitario);
+      let totalFinal = 0;
+
+      document.getElementById('conf-itens').innerHTML = itens.map(i => {
+        const qty = i.quantidade || 1;
+        const sub = i.preco_unitario ? i.preco_unitario * qty : null;
+        if (sub) totalFinal += sub;
+        return `
+          <div class="confirm-item">
+            <img src="${i.imagem || ''}" alt="${i.nome}" onerror="this.style.display='none'">
+            <div class="info">
+              <strong>${i.codigo} — ${i.nome}</strong>
+              <span>${i.linha || ''}</span>
+            </div>
+            <div class="preco">
+              ${qty}x${sub ? '<br>' + fmtBRL(sub) : ''}
+            </div>
+          </div>`;
+      }).join('');
+
+      document.getElementById('conf-total').textContent = temPreco ? fmtBRL(totalFinal) : itens.reduce((s,i) => s+(i.quantidade||1), 0) + ' un.';
     }
 
     // Init
