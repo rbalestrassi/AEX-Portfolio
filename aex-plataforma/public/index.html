@@ -197,6 +197,12 @@
     let currentProd = null;
     let cart = (() => { try { return JSON.parse(localStorage.getItem('aex_cart') || '[]'); } catch { return []; } })();
 
+    function proxyImg(url) {
+      if (!url) return '';
+      const m = url.match(/\/([^/]+\.png)$/i);
+      return m ? `/img/${m[1]}` : url;
+    }
+
     function fmtBRL(v) {
       return 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -318,13 +324,14 @@
       }
       grid.innerHTML = vis.map(p => {
         const imagens = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
-        const img = imagens[0] || p.imagem || '';
+        const rawImg = imagens[0] || p.imagem || '';
+        const img = proxyImg(rawImg);
         const linhaLabel = LINE_LABELS[p.linha] || p.linha;
         const already = inCart(p.codigo);
         return `
           <div class="prod-card" onclick="openModal(${p.id})">
             <div class="prod-img">
-              <img src="${img}" alt="${p.nome}" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display='none'">
+              <img src="${img}" alt="${p.nome}" loading="lazy" onerror="this.style.display='none'">
             </div>
             <div class="prod-body">
               <div class="prod-line">${linhaLabel}</div>
@@ -382,15 +389,15 @@
 
       // Imagens — usa dataset para evitar escape de src no onclick
       const img = document.getElementById('m-img');
-      img.src = imagens[0] || p.imagem || '';
+      img.src = proxyImg(imagens[0] || p.imagem || '');
       const thumbs = document.getElementById('m-thumbs');
       thumbs.innerHTML = '';
       imagens.forEach((src, i) => {
         const t = document.createElement('img');
-        t.src = src;
+        t.src = proxyImg(src);
         t.loading = 'lazy';
         if (i === 0) t.classList.add('active');
-        t.addEventListener('click', () => setImg(src, t));
+        t.addEventListener('click', () => setImg(proxyImg(src), t));
         thumbs.appendChild(t);
       });
       thumbs.hidden = imagens.length <= 1;
