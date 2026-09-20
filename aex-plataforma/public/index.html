@@ -69,6 +69,17 @@
     .img-thumbs img.active { border-color:var(--aex-red); }
     .modal-close { position:absolute; top:12px; right:12px; background:rgba(0,0,0,.7); color:#fff; border:none; border-radius:50%; width:36px; height:36px; cursor:pointer; font-size:18px; display:flex; align-items:center; justify-content:center; }
 
+    /* ── Modal quantidade ── */
+    #qty-modal { position:fixed; inset:0; background:rgba(0,0,0,.7); z-index:600; display:flex; align-items:center; justify-content:center; padding:16px; }
+    #qty-modal.hidden { display:none; }
+    #qty-box { background:var(--aex-card); border:1px solid var(--aex-border); border-radius:12px; padding:24px; width:100%; max-width:320px; }
+    #qty-box h3 { font-size:15px; font-weight:600; margin-bottom:4px; }
+    #qty-box .qty-produto { font-size:12px; color:var(--aex-muted); margin-bottom:16px; }
+    .qty-input-row { display:flex; align-items:center; justify-content:center; gap:12px; margin-bottom:20px; }
+    .qty-input-row button { width:36px; height:36px; border-radius:8px; border:1px solid var(--aex-border); background:var(--aex-dark); color:var(--aex-text); font-size:20px; cursor:pointer; }
+    .qty-input-row input { width:64px; text-align:center; font-size:20px; font-weight:700; border:1px solid var(--aex-border); background:var(--aex-dark); color:var(--aex-text); border-radius:8px; padding:6px; }
+    .qty-btns { display:flex; gap:8px; }
+
     /* ── Preço no card ── */
     .prod-price-block { margin:8px 0 4px; }
     .prod-price { font-size:16px; font-weight:700; color:var(--aex-success); }
@@ -160,6 +171,23 @@
     </div>
   </div>
 
+  <!-- Modal quantidade -->
+  <div id="qty-modal" class="hidden">
+    <div id="qty-box">
+      <h3>Quantas unidades?</h3>
+      <div class="qty-produto" id="qty-nome"></div>
+      <div class="qty-input-row">
+        <button onclick="qtyDelta(-1)">−</button>
+        <input type="number" id="qty-input" value="1" min="1" max="999">
+        <button onclick="qtyDelta(+1)">+</button>
+      </div>
+      <div class="qty-btns">
+        <button class="btn btn-secondary" style="flex:1" onclick="closeQtyModal()">Cancelar</button>
+        <button class="btn btn-primary" style="flex:2" onclick="confirmQty()">🛒 Adicionar</button>
+      </div>
+    </div>
+  </div>
+
   <div id="aex-toast"></div>
 
   <script>
@@ -221,30 +249,50 @@
 
     function inCart(codigo) { return cart.some(i => i.codigo === codigo); }
 
-    function addToCart(p) {
+    let qtyTarget = null;
+
+    function openQtyModal(p) {
       if (!session) { location.href = '/login?next=/'; return; }
       if (session.status !== 'aprovado') { toast('Aguarde aprovação do cadastro.', true); return; }
-      if (inCart(p.codigo)) {
-        toast('Já está no carrinho.'); return;
-      }
+      if (inCart(p.codigo)) { toast('Já está no carrinho.'); return; }
+      qtyTarget = p;
+      document.getElementById('qty-nome').textContent = p.codigo + ' — ' + p.nome;
+      document.getElementById('qty-input').value = 1;
+      document.getElementById('qty-modal').classList.remove('hidden');
+    }
+
+    function closeQtyModal() {
+      document.getElementById('qty-modal').classList.add('hidden');
+      qtyTarget = null;
+    }
+
+    function qtyDelta(d) {
+      const inp = document.getElementById('qty-input');
+      inp.value = Math.max(1, (parseInt(inp.value) || 1) + d);
+    }
+
+    function confirmQty() {
+      if (!qtyTarget) return;
+      const qty = Math.max(1, parseInt(document.getElementById('qty-input').value) || 1);
+      const p = qtyTarget;
       const imagens = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
       const precoFinal = calcPreco(p.preco);
-      cart.push({ codigo: p.codigo, nome: p.nome, linha: p.linha, quantidade: 1, imagem: imagens[0] || '', preco_original: p.preco || null, preco_final: precoFinal || null, ipi: p.ipi || null, desconto: session?.desconto || 0 });
+      cart.push({ codigo: p.codigo, nome: p.nome, linha: p.linha, quantidade: qty, imagem: imagens[0] || '', preco_original: p.preco || null, preco_final: precoFinal || null, ipi: p.ipi || null, desconto: session?.desconto || 0 });
       localStorage.setItem('aex_cart', JSON.stringify(cart));
       updateCartFab();
-      toast('✅ ' + p.codigo + ' adicionado!');
+      toast('✅ ' + qty + 'x ' + p.codigo + ' adicionado!');
+      closeQtyModal();
+      closeModalForce();
       renderGrid();
     }
 
-    // Adiciona ao carrinho por ID (evita passar objeto inteiro no onclick)
     function addToCartById(id) {
       const p = produtos.find(x => x.id === id);
-      if (p) addToCart(p);
+      if (p) openQtyModal(p);
     }
 
     function addFromModal() {
-      if (currentProd) addToCart(currentProd);
-      closeModalForce();
+      if (currentProd) openQtyModal(currentProd);
     }
 
     function setFilter(f, btn) {
