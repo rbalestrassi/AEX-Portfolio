@@ -8,9 +8,10 @@ const pool       = require('./db');
 const app  = express();
 const PORT = process.env.PORT || 3000;
 
+// ── Proxy trust (Traefik termina HTTPS, Node recebe HTTP) ────────────────────
+app.set('trust proxy', 1);
+
 // ── Middlewares ───────────────────────────────────────────────────────────────
-// CORS: frontend é servido pelo mesmo Express — credenciais same-origin,
-// não é necessário CORS com credentials. Nenhuma origem externa autorizada.
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
@@ -22,7 +23,7 @@ app.use(session({
   cookie: {
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 dias
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    secure: 'auto',
     sameSite: 'lax',
   },
 }));
