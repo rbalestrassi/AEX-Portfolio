@@ -234,6 +234,10 @@
     let currentProd = null;
     let cart = (() => { try { return JSON.parse(localStorage.getItem('aex_cart') || '[]'); } catch { return []; } })();
 
+    function esc(s) {
+      return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+    }
+
     function proxyImg(url) {
       if (!url) return '';
       const m = url.match(/\/([^/]+\.png)$/i);
@@ -310,8 +314,8 @@
         `Pedido ${last.numero || '#' + last.id} · ${data} · ${itens.length} ${itens.length === 1 ? 'item' : 'itens'}`;
       document.getElementById('ult-ped-items').innerHTML = itens.slice(0, 12).map(item => `
         <div class="ult-ped-item">
-          <strong>${item.codigo || ''}</strong>
-          ${item.nome || ''} <span style="color:var(--aex-muted)">× ${item.quantidade || 1}</span>
+          <strong>${esc(item.codigo)}</strong>
+          ${esc(item.nome)} <span style="color:var(--aex-muted)">× ${esc(item.quantidade || 1)}</span>
         </div>
       `).join('');
       document.getElementById('ultimo-pedido').classList.add('visible');
@@ -422,13 +426,13 @@
         return `
           <div class="prod-card" onclick="openModal(${p.id})">
             <div class="prod-img">
-              <img src="${img}" alt="${p.nome}" loading="lazy" onerror="this.style.display='none'">
+              <img src="${esc(img)}" alt="${esc(p.nome)}" loading="lazy" onerror="this.style.display='none'">
             </div>
             <div class="prod-body">
-              <div class="prod-line">${linhaLabel}</div>
-              <div class="prod-code">${p.part_number || p.codigo}</div>
-              <div class="prod-name">${p.nome}</div>
-              <div class="prod-meta">${p.modelo_compressor || ''} ${p.tensao ? '· ' + p.tensao : ''}</div>
+              <div class="prod-line">${esc(linhaLabel)}</div>
+              <div class="prod-code">${esc(p.part_number || p.codigo)}</div>
+              <div class="prod-name">${esc(p.nome)}</div>
+              <div class="prod-meta">${esc(p.modelo_compressor || '')} ${p.tensao ? '· ' + esc(p.tensao) : ''}</div>
               <div class="prod-price-block">
                 ${(() => {
                   if (session?.status === 'aprovado' && p.preco) {
