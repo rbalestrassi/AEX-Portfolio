@@ -93,6 +93,30 @@
 
     /* ── Navbar sessão ── */
     .nav-user { font-size:13px; color:var(--aex-muted); }
+
+    /* ── Carrinho no nav ── */
+    #nav-cart-total { font-size:13px; font-weight:600; color:var(--aex-red); display:none; cursor:pointer; }
+    #nav-cart-total.visible { display:inline-flex; align-items:center; gap:6px; }
+
+    /* ── Último pedido ── */
+    #ultimo-pedido { display:none; background:var(--aex-card); border-bottom:1px solid var(--aex-border); padding:16px 24px; }
+    #ultimo-pedido.visible { display:block; }
+    .ult-ped-header { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; margin-bottom:12px; }
+    .ult-ped-title { font-size:14px; font-weight:700; }
+    .ult-ped-meta { font-size:12px; color:var(--aex-muted); margin-top:2px; }
+    .ult-ped-items { display:flex; gap:8px; overflow-x:auto; padding-bottom:4px; }
+    .ult-ped-item { flex-shrink:0; background:var(--aex-dark); border:1px solid var(--aex-border); border-radius:8px; padding:8px 12px; font-size:12px; min-width:120px; }
+    .ult-ped-item strong { display:block; font-size:13px; font-weight:600; margin-bottom:2px; }
+
+    /* ── Tooltip de preço ── */
+    .tooltip-wrap { position:relative; display:inline-flex; align-items:center; gap:4px; }
+    .tooltip-icon { font-size:10px; color:var(--aex-muted); cursor:default; background:rgba(255,255,255,.1); border-radius:50%; width:14px; height:14px; display:inline-flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .price-tooltip { position:absolute; bottom:calc(100% + 6px); left:0; background:#1a1a1f; border:1px solid var(--aex-border); border-radius:8px; padding:10px 12px; font-size:12px; white-space:nowrap; z-index:300; pointer-events:none; opacity:0; transition:.15s; box-shadow:0 4px 16px rgba(0,0,0,.6); }
+    .tooltip-wrap:hover .price-tooltip { opacity:1; }
+    .price-tooltip .tip-row { display:flex; justify-content:space-between; gap:16px; margin-bottom:4px; }
+    .price-tooltip .tip-row:last-child { margin-bottom:0; }
+    .price-tooltip .tip-final { color:var(--aex-success); font-weight:700; border-top:1px solid var(--aex-border); padding-top:4px; margin-top:2px; }
+    .price-tooltip .tip-label { color:var(--aex-muted); }
   </style>
 </head>
 <body>
@@ -100,6 +124,7 @@
     <img src="/assets/aex-logo.png" class="logo" alt="AEX Air Automotive" onerror="this.style.display='none'">
     <div class="aex-nav-links">
       <span id="nav-user" class="nav-user"></span>
+      <span id="nav-cart-total" onclick="location.href='/pedido'">🛒 <span id="nav-cart-value">R$ 0,00</span></span>
       <a href="/meus-pedidos" id="link-pedidos" hidden>Meus Pedidos</a>
       <a href="/login" id="link-login">Entrar</a>
       <button id="btn-logout" class="btn btn-ghost btn-sm" onclick="logout()" hidden>Sair</button>
@@ -120,6 +145,18 @@
       <a href="/login" class="btn btn-secondary" id="btn-login-hero">Entrar para pedir</a>
     </div>
   </section>
+
+  <!-- Último pedido -->
+  <div id="ultimo-pedido">
+    <div class="ult-ped-header">
+      <div>
+        <div class="ult-ped-title">Último pedido</div>
+        <div class="ult-ped-meta" id="ult-ped-meta"></div>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="repetirPedido()">↺ Repetir pedido</button>
+    </div>
+    <div class="ult-ped-items" id="ult-ped-items"></div>
+  </div>
 
   <!-- Filtros -->
   <div class="filters-wrap">
@@ -244,17 +281,71 @@
     }
 
     function updateCartFab() {
-      const total = cart.reduce((s, i) => s + (i.quantidade || 1), 0);
-      const fab   = document.getElementById('cart-fab');
+      const total    = cart.reduce((s, i) => s + (i.quantidade || 1), 0);
+      const totalVal = cart.reduce((s, i) => s + ((parseFloat(i.preco_final) || 0) * (i.quantidade || 1)), 0);
+      const fab      = document.getElementById('cart-fab');
+      const navCart  = document.getElementById('nav-cart-total');
       document.getElementById('cart-count').textContent = total;
       if (total > 0 && session?.status === 'aprovado') {
         fab.classList.remove('hidden');
+        document.getElementById('nav-cart-value').textContent = fmtBRL(totalVal);
+        navCart.classList.add('visible');
       } else {
         fab.classList.add('hidden');
+        navCart.classList.remove('visible');
       }
     }
 
     function inCart(codigo) { return cart.some(i => i.codigo === codigo); }
+
+    let lastOrderItens = [];
+
+    function renderUltimoPedido(orders) {
+      if (!orders?.length || session?.tipo === 'admin') return;
+      const last  = orders[0];
+      const itens = typeof last.itens === 'string' ? JSON.parse(last.itens || '[]') : (last.itens || []);
+      lastOrderItens = itens;
+      const data  = new Date(last.criado_em).toLocaleDateString('pt-BR');
+      document.getElementById('ult-ped-meta').textContent =
+        `Pedido ${last.numero || '#' + last.id} · ${data} · ${itens.length} ${itens.length === 1 ? 'item' : 'itens'}`;
+      document.getElementById('ult-ped-items').innerHTML = itens.slice(0, 12).map(item => `
+        <div class="ult-ped-item">
+          <strong>${item.codigo || ''}</strong>
+          ${item.nome || ''} <span style="color:var(--aex-muted)">× ${item.quantidade || 1}</span>
+        </div>
+      `).join('');
+      document.getElementById('ultimo-pedido').classList.add('visible');
+    }
+
+    function repetirPedido() {
+      if (!lastOrderItens.length) return;
+      let added = 0;
+      lastOrderItens.forEach(item => {
+        if (!inCart(item.codigo)) {
+          const p = produtos.find(x => x.codigo === item.codigo);
+          cart.push({
+            codigo:         item.codigo,
+            nome:           item.nome || '',
+            linha:          item.linha || '',
+            quantidade:     item.quantidade || 1,
+            imagem:         item.imagem || '',
+            preco_original: item.preco_original || null,
+            preco_final:    p ? calcPreco(p.preco) : (item.preco_final || null),
+            ipi:            item.ipi || null,
+            desconto:       session?.desconto || 0,
+          });
+          added++;
+        }
+      });
+      if (added > 0) {
+        localStorage.setItem('aex_cart', JSON.stringify(cart));
+        updateCartFab();
+        renderGrid();
+        toast(`✅ ${added} ${added === 1 ? 'item adicionado' : 'itens adicionados'} ao carrinho!`);
+      } else {
+        toast('Todos os itens já estão no carrinho.');
+      }
+    }
 
     let qtyTarget = null;
 
@@ -339,11 +430,31 @@
               <div class="prod-name">${p.nome}</div>
               <div class="prod-meta">${p.modelo_compressor || ''} ${p.tensao ? '· ' + p.tensao : ''}</div>
               <div class="prod-price-block">
-                ${session?.status === 'aprovado' && p.preco
-                  ? `<span class="prod-price">${fmtBRL(calcPreco(p.preco))}</span><span class="prod-price-ipi">+IPI ${parseFloat(p.ipi||3.25).toFixed(2).replace('.',',')}%</span>${session.desconto > 0 ? `<div style="font-size:11px;color:var(--aex-muted)">Desconto ${session.desconto}% aplicado</div>` : ''}`
-                  : session && session.status !== 'aprovado'
-                    ? ''
-                    : p.preco ? '<span class="prod-price-login">Entre para ver o preço</span>' : ''}
+                ${(() => {
+                  if (session?.status === 'aprovado' && p.preco) {
+                    const ipi = parseFloat(p.ipi || 3.25);
+                    const final = calcPreco(p.preco);
+                    const ipiVal = Math.round(final * ipi / 100 * 100) / 100;
+                    const comIpi = Math.round(final * (1 + ipi / 100) * 100) / 100;
+                    const descontoRows = session.desconto > 0
+                      ? `<div class="tip-row"><span class="tip-label">Tabela</span><span>${fmtBRL(p.preco)}</span></div><div class="tip-row"><span class="tip-label">Desconto</span><span>${session.desconto}%</span></div>`
+                      : '';
+                    return `<div class="tooltip-wrap">
+                      <span class="prod-price">${fmtBRL(final)}</span>
+                      <span class="tooltip-icon">ℹ</span>
+                      <div class="price-tooltip">
+                        ${descontoRows}
+                        <div class="tip-row"><span class="tip-label">Valor s/ IPI</span><span>${fmtBRL(final)}</span></div>
+                        <div class="tip-row"><span class="tip-label">IPI ${ipi.toFixed(2).replace('.',',')}%</span><span>+${fmtBRL(ipiVal)}</span></div>
+                        <div class="tip-row tip-final"><span class="tip-label">Com IPI</span><span>${fmtBRL(comIpi)}</span></div>
+                      </div>
+                    </div>`;
+                  } else if (session && session.status !== 'aprovado') {
+                    return '';
+                  } else {
+                    return p.preco ? '<span class="prod-price-login">Entre para ver o preço</span>' : '';
+                  }
+                })()}
               </div>
               ${session?.tipo === 'admin' ? '' : `
               <button class="btn btn-primary btn-sm btn-add ${already ? 'added' : ''}"
@@ -470,6 +581,9 @@
       updateCartFab();
       document.getElementById('total-count').textContent = '+' + produtos.length;
       renderGrid();
+      if (me?.status === 'aprovado' && me?.tipo !== 'admin') {
+        fetch('/api/orders').then(r => r.ok ? r.json() : []).then(renderUltimoPedido).catch(() => {});
+      }
     });
   </script>
 </body>
