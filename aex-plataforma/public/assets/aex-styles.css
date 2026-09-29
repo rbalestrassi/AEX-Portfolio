@@ -51,15 +51,17 @@ body {
 .btn {
   display: inline-flex; align-items: center; gap: 8px;
   padding: 10px 20px; border-radius: var(--radius);
-  font-size: 14px; font-weight: 600; cursor: pointer;
-  border: none; transition: .2s; text-decoration: none;
+  font-family: 'Barlow Condensed', sans-serif;
+  font-size: 14px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase;
+  cursor: pointer; border: none; transition: .2s; text-decoration: none;
 }
 .btn-primary { background: var(--aex-red); color: #111111; }
 .btn-primary:hover { background: var(--aex-red-h); }
 .btn-secondary { background: var(--aex-card); color: var(--aex-text); border: 1px solid var(--aex-border); }
 .btn-secondary:hover { border-color: var(--aex-red); }
-.btn-sm { padding: 6px 14px; font-size: 13px; }
-.btn-ghost { background: transparent; color: var(--aex-muted); }
+.btn-sm { padding: 6px 14px; font-size: 12px; letter-spacing: 1.5px; }
+.btn-ghost { background: transparent; color: var(--aex-muted); letter-spacing: 1px; }
 .btn-ghost:hover { color: var(--aex-text); }
 .btn:disabled { opacity: .5; cursor: not-allowed; }
 
