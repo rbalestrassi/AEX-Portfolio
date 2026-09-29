@@ -134,8 +134,8 @@
     }
 
     /* ── Carousel lançamentos ── */
-    #lancamentos { display:none; padding:20px 20px 0; }
-    #lancamentos.visible { display:block; }
+    #lancamentos, #comprados-recentemente { display:none; padding:20px 20px 0; }
+    #lancamentos.visible, #comprados-recentemente.visible { display:block; }
     .lanc-title { font-size:13px; font-weight:700; color:var(--aex-muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:12px; }
     .lanc-track { display:flex; gap:12px; overflow-x:auto; padding-bottom:8px; scroll-snap-type:x mandatory; }
     .lanc-track::-webkit-scrollbar { height:4px; }
@@ -221,6 +221,12 @@
       <div id="lancamentos">
         <div class="lanc-title">✨ Novidades</div>
         <div class="lanc-track" id="lanc-track"></div>
+      </div>
+
+      <!-- Comprados recentemente -->
+      <div id="comprados-recentemente">
+        <div class="lanc-title">🔁 Comprados recentemente</div>
+        <div class="lanc-track" id="comprados-track"></div>
       </div>
 
       <!-- Grid -->
@@ -479,6 +485,40 @@
       document.getElementById('lancamentos').classList.add('visible');
     }
 
+    function renderCompradosRecentemente(orders, prods) {
+      if (!orders?.length || !prods?.length) return;
+      // Extrai códigos únicos de todos os pedidos, mais recente primeiro
+      const seen = new Set();
+      const codigos = [];
+      orders.forEach(o => {
+        const itens = typeof o.itens === 'string' ? JSON.parse(o.itens || '[]') : (o.itens || []);
+        itens.forEach(i => { if (i.codigo && !seen.has(i.codigo)) { seen.add(i.codigo); codigos.push(i.codigo); } });
+      });
+      if (!codigos.length) return;
+      // Cruza com o catálogo atual (ignora descontinuados)
+      const comprados = codigos.map(c => prods.find(p => p.codigo === c)).filter(Boolean);
+      if (!comprados.length) return;
+
+      document.getElementById('comprados-track').innerHTML = comprados.slice(0, 12).map(p => {
+        const imagens = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
+        const img = proxyImg(imagens[0] || p.imagem || '');
+        const preco = p.preco ? calcPreco(p.preco) : null;
+        const already = inCart(p.codigo);
+        return `
+          <div class="lanc-card" onclick="openModal(${p.id})">
+            <img src="${esc(img)}" alt="${esc(p.nome)}" loading="lazy" onerror="this.style.display='none'">
+            <div class="lanc-card-body">
+              <div class="lanc-card-code">${esc(p.part_number || p.codigo)}</div>
+              <div class="lanc-card-name">${esc(p.nome)}</div>
+              ${preco ? `<div class="lanc-card-price">${fmtBRL(preco)}</div>` : ''}
+              ${!already ? `<button class="btn btn-primary btn-sm" style="width:100%;margin-top:6px;font-size:11px" onclick="event.stopPropagation();addToCartById(${p.id})">+ Adicionar</button>`
+                         : `<button class="btn btn-sm" style="width:100%;margin-top:6px;font-size:11px;background:var(--aex-success);color:#111;border:none;border-radius:6px;padding:5px" disabled>✓ No carrinho</button>`}
+            </div>
+          </div>`;
+      }).join('');
+      document.getElementById('comprados-recentemente').classList.add('visible');
+    }
+
     function matchFilter(p) {
       if (activeFilter === 'todas') return true;
       const linhas = typeof p.linhas === 'string' ? JSON.parse(p.linhas || '[]') : (p.linhas || []);
@@ -662,7 +702,10 @@
       renderGrid();
       renderLancamentos(produtos);
       if (me?.status === 'aprovado' && me?.tipo !== 'admin') {
-        fetch('/api/orders').then(r => r.ok ? r.json() : []).then(renderUltimoPedido).catch(() => {});
+        fetch('/api/orders').then(r => r.ok ? r.json() : []).then(orders => {
+          renderUltimoPedido(orders);
+          renderCompradosRecentemente(orders, produtos);
+        }).catch(() => {});
       }
     });
   </script>
