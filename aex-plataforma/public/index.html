@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>AEX Air Automotive — Catálogo B2B</title>
+  <script>(function(){var t=localStorage.getItem('aex-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/aex-styles.css">
@@ -147,6 +148,27 @@
     .lanc-card-code { font-size:10px; color:var(--aex-muted); margin-bottom:3px; }
     .lanc-card-name { font-size:12px; font-weight:600; line-height:1.3; margin-bottom:6px; }
     .lanc-card-price { font-size:13px; font-weight:700; color:var(--aex-success); }
+
+    /* ── Overrides modo claro ── */
+    [data-theme="light"] .hero { background: linear-gradient(135deg, #f5f4f4 0%, #ede8e3 100%); }
+    [data-theme="light"] .hero h1 { font-family:'Barlow Condensed',sans-serif; text-transform:uppercase; letter-spacing:-.01em; }
+    [data-theme="light"] .modal-overlay { background: rgba(0,0,0,0.45); }
+    [data-theme="light"] .modal-imgs, [data-theme="light"] .img-thumbs { background: #ede8e3; }
+    [data-theme="light"] .modal-close { background:rgba(255,255,255,0.85); color:#111419; }
+    [data-theme="light"] .prod-img { background: #ede8e3; }
+    [data-theme="light"] .prod-line { background:rgba(17,20,25,0.07); }
+    [data-theme="light"] .lanc-card img { background: #ede8e3; }
+    [data-theme="light"] .modal-preco { background:rgba(0,0,0,0.04); }
+    [data-theme="light"] .price-tooltip { background:#ffffff; color:#111419; box-shadow:0 4px 16px rgba(0,0,0,0.12); }
+    [data-theme="light"] .cat-sidebar .filter-btn:hover { background:rgba(0,0,0,0.05); }
+    [data-theme="light"] .cat-sidebar .filter-btn.active { background:rgba(17,20,25,0.08); }
+    [data-theme="light"] #cart-fab { color:#f5f4f4; box-shadow:0 4px 20px rgba(0,0,0,.25); }
+    [data-theme="light"] #cart-count { background:#f5f4f4; color:#111419; }
+    [data-theme="light"] #qty-modal { background:rgba(0,0,0,0.4); }
+    [data-theme="light"] .qty-input-row button,
+    [data-theme="light"] .qty-input-row input { background:#f5f4f4; color:#111419; }
+    [data-theme="light"] .ult-ped-item { background:#f0ede8; }
+    [data-theme="light"] .tooltip-icon { background:rgba(17,20,25,0.08); }
   </style>
 </head>
 <body>
@@ -158,6 +180,7 @@
       <a href="/meus-pedidos" id="link-pedidos" hidden>Meus Pedidos</a>
       <a href="/login" id="link-login">Entrar</a>
       <button id="btn-logout" class="btn btn-ghost btn-sm" onclick="logout()" hidden>Sair</button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema"></button>
     </div>
   </nav>
 
@@ -292,6 +315,13 @@
     let session = null;
     let currentProd = null;
     let cart = (() => { try { return JSON.parse(localStorage.getItem('aex_cart') || '[]'); } catch { return []; } })();
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('aex-theme', next);
+    }
 
     function esc(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');

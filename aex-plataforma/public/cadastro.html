@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Cadastro — AEX Air Automotive</title>
+  <script>(function(){var t=localStorage.getItem('aex-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/aex-styles.css">
@@ -13,9 +14,11 @@
     .cad-logo { text-align: center; margin-bottom: 24px; }
     .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     @media(max-width:480px){ .two-col { grid-template-columns: 1fr; } }
+    .theme-corner { position:fixed; top:16px; right:16px; }
   </style>
 </head>
 <body>
+  <button class="theme-toggle theme-corner" onclick="toggleTheme()" title="Alternar tema"></button>
   <div class="cad-box">
     <div class="cad-logo">
       <img src="/assets/aex-logo.png" alt="AEX" height="40" onerror="this.style.display='none'">
@@ -79,6 +82,13 @@
   <div id="aex-toast"></div>
 
   <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('aex-theme', next);
+    }
+
     // Máscara CNPJ ou CPF (detecta pelo número de dígitos)
     document.getElementById('cnpj').addEventListener('input', e => {
       let v = e.target.value.replace(/\D/g, '').slice(0, 14);

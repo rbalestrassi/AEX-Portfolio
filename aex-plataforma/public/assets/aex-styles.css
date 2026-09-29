@@ -167,3 +167,81 @@ body {
 .text-muted { color: var(--aex-muted); font-size: 13px; }
 .text-red { color: var(--aex-red); }
 .text-success { color: var(--aex-success); }
+
+/* ══════════════════════════════════════════════════════════════
+   TEMA CLARO — visual extraído de aexautomotive.com.br
+   Barlow Condensed 800 uppercase · off-white #f5f4f4 · #111419
+   ══════════════════════════════════════════════════════════════ */
+
+[data-theme="light"] {
+  --aex-black:   #f5f4f4;
+  --aex-dark:    rgba(250,249,245,0.95);
+  --aex-card:    #ffffff;
+  --aex-border:  rgba(22,24,27,0.11);
+  --aex-red:     #111419;
+  --aex-red-h:   #333333;
+  --aex-text:    #111419;
+  --aex-muted:   rgba(17,20,25,0.45);
+  --aex-success: #0d9e4e;
+  --shadow:      0 2px 16px rgba(0,0,0,0.07);
+}
+
+/* Nav: glassmorphism igual ao site principal */
+[data-theme="light"] .aex-nav {
+  background: rgba(250,249,245,0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(22,24,27,0.07);
+}
+
+/* Botão primário: texto claro sobre fundo escuro */
+[data-theme="light"] .btn-primary         { color: #f5f4f4; }
+[data-theme="light"] .btn-primary:hover   { color: #ffffff; }
+[data-theme="light"] .filter-btn.active   { color: #f5f4f4; }
+
+/* Progress step ativo */
+[data-theme="light"] .progress-step.active .step-dot { color: #f5f4f4; }
+
+/* Formulários */
+[data-theme="light"] .form-group input,
+[data-theme="light"] .form-group select,
+[data-theme="light"] .form-group textarea {
+  background: #ffffff;
+  border-color: rgba(22,24,27,0.16);
+  color: #111419;
+}
+
+/* Tabela */
+[data-theme="light"] .aex-table tr:hover td { background: rgba(0,0,0,0.02); }
+
+/* Toast de erro */
+[data-theme="light"] #aex-toast.error { border-color: #ef4444; color: #dc2626; }
+
+/* Badges — paleta clarinha como Tailwind UI */
+[data-theme="light"] .badge-pendente  { background:#fef3c7; color:#92400e; }
+[data-theme="light"] .badge-aprovado  { background:#d1fae5; color:#065f46; }
+[data-theme="light"] .badge-bloqueado { background:#fee2e2; color:#991b1b; }
+[data-theme="light"] .badge-recebido  { background:#ede9fe; color:#4c1d95; }
+[data-theme="light"] .badge-separando { background:#ecfdf5; color:#166534; }
+[data-theme="light"] .badge-enviado   { background:#e0f2fe; color:#075985; }
+[data-theme="light"] .badge-entregue  { background:#d1fae5; color:#065f46; }
+
+/* Status tabs (meus-pedidos) */
+[data-theme="light"] .status-tab.active { color: #f5f4f4; }
+
+/* ── Botão toggle de tema ── */
+.theme-toggle {
+  background: transparent;
+  border: 1px solid var(--aex-border);
+  color: var(--aex-muted);
+  border-radius: 8px;
+  padding: 5px 9px;
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+  transition: .2s;
+}
+.theme-toggle:hover { color: var(--aex-text); border-color: rgba(128,128,128,0.4); }
+/* Ícone via CSS — sem texto no HTML → zero flash */
+.theme-toggle::after          { content: '☀️'; } /* dark mode: oferece mudar p/ light */
+[data-theme="light"] .theme-toggle::after { content: '🌙'; } /* light mode: oferece mudar p/ dark */

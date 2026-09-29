@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Finalizar Pedido — AEX Air Automotive</title>
+  <script>(function(){var t=localStorage.getItem('aex-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/aex-styles.css">
@@ -46,6 +47,8 @@
     .confirm-total { display:flex; justify-content:space-between; padding:14px 0 0; font-size:18px; font-weight:800; border-top:2px solid var(--aex-border); margin-top:8px; }
     .confirm-total span:last-child { color:var(--aex-success); }
     .confirm-actions { display:flex; flex-direction:column; gap:10px; margin-top:24px; }
+    [data-theme="light"] .cart-item img,
+    [data-theme="light"] .confirm-item img { background:#ede8e3; }
   </style>
 </head>
 <body>
@@ -55,6 +58,7 @@
       <a href="/">Catálogo</a>
       <a href="/meus-pedidos">Meus Pedidos</a>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema"></button>
     </div>
   </nav>
 
@@ -147,6 +151,13 @@
       el.className = 'show' + (err ? ' error' : '');
       clearTimeout(el._t);
       el._t = setTimeout(() => el.className = '', 4000);
+    }
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('aex-theme', next);
     }
 
     async function logout() {

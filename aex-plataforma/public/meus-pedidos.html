@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Meus Pedidos — AEX Air Automotive</title>
+  <script>(function(){var t=localStorage.getItem('aex-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/aex-styles.css">
@@ -49,6 +50,9 @@
     .btn-novo { position:fixed; bottom:24px; right:24px; border-radius:50px; padding:14px 24px; box-shadow:0 4px 16px rgba(200,16,46,.4); z-index:100; }
 
     .empty-msg { text-align:center; padding:64px; color:var(--aex-muted); }
+
+    /* overrides light */
+    [data-theme="light"] .btn-novo { color:#f5f4f4; box-shadow:0 4px 16px rgba(0,0,0,.2); }
   </style>
 </head>
 <body>
@@ -58,6 +62,7 @@
       <a href="/">Catálogo</a>
       <a href="/meus-pedidos" class="active">Meus Pedidos</a>
       <button class="btn btn-ghost btn-sm" onclick="logout()">Sair</button>
+      <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema"></button>
     </div>
   </nav>
 
@@ -107,6 +112,13 @@
     let allPedidos = [];
     let activeStatus = 'todos';
     let cart = (() => { try { return JSON.parse(localStorage.getItem('aex_cart') || '[]'); } catch { return []; } })();
+
+    function toggleTheme() {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('aex-theme', next);
+    }
 
     function esc(s) {
       return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');

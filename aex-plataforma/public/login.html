@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Login — AEX Air Automotive</title>
+  <script>(function(){var t=localStorage.getItem('aex-theme')||'dark';document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/aex-styles.css">
@@ -19,9 +20,11 @@
     .panel.active { display: block; }
     .divider { text-align: center; margin: 20px 0; color: var(--aex-muted); font-size: 13px; }
     a.link { color: var(--aex-red); text-decoration: none; }
+    .theme-corner { position:fixed; top:16px; right:16px; }
   </style>
 </head>
 <body>
+  <button class="theme-toggle theme-corner" onclick="toggleTheme()" title="Alternar tema"></button>
   <div class="login-box">
     <div class="login-logo">
       <img src="/assets/aex-logo.png" alt="AEX Air Automotive" onerror="this.style.display='none'">
@@ -72,6 +75,13 @@
   <div id="aex-toast"></div>
 
   <script>
+    function toggleTheme() {
+      const html = document.documentElement;
+      const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      html.setAttribute('data-theme', next);
+      localStorage.setItem('aex-theme', next);
+    }
+
     const params  = new URLSearchParams(location.search);
     const redirect = params.get('next') || '/';
 
