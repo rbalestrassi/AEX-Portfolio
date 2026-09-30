@@ -11,8 +11,8 @@ header('Content-Type: application/json; charset=utf-8');
 // Tipos permitidos
 $ALLOWED = ['hero','footer','products'];
 
-// Token de autenticação — deve ser igual ao definido no index.html
-define('AEX_TOKEN', 'aex-admin-tk-2024');
+// Token carregado de config.php (fora do controle de versão)
+require_once __DIR__ . '/config.php';
 
 $type = isset($_GET['type']) ? trim($_GET['type']) : '';
 
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'GET') {
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Verifica token
     $token = isset($_SERVER['HTTP_X_AEX_TOKEN']) ? $_SERVER['HTTP_X_AEX_TOKEN'] : '';
-    if ($token !== AEX_TOKEN) {
+    if (!hash_equals(AEX_TOKEN, $token)) {
         http_response_code(403);
         echo json_encode(['error' => 'Não autorizado']);
         exit;
@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 // DELETE: limpa dado específico (reset)
 if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
     $token = isset($_SERVER['HTTP_X_AEX_TOKEN']) ? $_SERVER['HTTP_X_AEX_TOKEN'] : '';
-    if ($token !== AEX_TOKEN) {
+    if (!hash_equals(AEX_TOKEN, $token)) {
         http_response_code(403);
         echo json_encode(['error' => 'Não autorizado']);
         exit;
