@@ -44,7 +44,7 @@ app.get('/img/:filename', (req, res) => {
   if (!/^[\w.-]+-\d+\.png$/i.test(filename)) return res.status(400).end();
   res.setHeader('Cache-Control', 'public, max-age=86400');
   res.sendFile(path.join(__dirname, '../public/assets/produtos', filename), (err) => {
-    if (err) res.status(404).end();
+    if (err) { res.setHeader('Cache-Control', 'no-store'); res.status(404).end(); }
   });
 });
 
