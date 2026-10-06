@@ -146,7 +146,7 @@
     }
 
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
-      if (!d || d.tipo !== 'admin') { location.href = '/login'; return; }
+      if (!d || d.tipo !== 'admin') { location.href = '/admin/login'; return; }
       loadProdutos().catch(() => {
         document.getElementById('loading').textContent = 'Erro ao carregar produtos.';
       });

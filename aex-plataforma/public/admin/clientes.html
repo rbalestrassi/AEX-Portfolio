@@ -155,7 +155,7 @@
     async function load() {
       try {
         const r = await fetch('/api/clients');
-        if (r.status === 401) { location.href = '/login'; return; }
+        if (r.status === 401) { location.href = '/admin/login'; return; }
         clientes = await r.json();
         document.getElementById('loading').hidden = true;
         render();
@@ -163,7 +163,7 @@
     }
 
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
-      if (!d || d.tipo !== 'admin') { location.href = '/login'; return; }
+      if (!d || d.tipo !== 'admin') { location.href = '/admin/login'; return; }
       nivel = d.nivel;
       load();
     });

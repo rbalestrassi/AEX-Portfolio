@@ -80,11 +80,11 @@
   <script>
     async function logout() {
       await fetch('/api/auth/logout', { method: 'POST' });
-      location.href = '/login';
+      location.href = '/admin/login';
     }
 
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
-      if (!d || d.tipo !== 'admin') { location.href = '/login'; return; }
+      if (!d || d.tipo !== 'admin') { location.href = '/admin/login'; return; }
       document.getElementById('admin-nome').textContent = d.nome + ' (' + d.nivel + ')';
     });
 

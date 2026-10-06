@@ -3,17 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Login — AEX Air Automotive</title>
+  <title>Admin — AEX Air Automotive</title>
   <script>(function(){var t=localStorage.getItem('aex-theme')||'light';document.documentElement.setAttribute('data-theme',t);})();</script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700;800&family=Barlow+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/assets/aex-styles.css">
   <style>
     body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-    .login-box { width: 100%; max-width: 400px; padding: 16px; }
+    .login-box { width: 100%; max-width: 380px; padding: 16px; }
     .login-logo { text-align: center; margin-bottom: 32px; }
     .login-logo img { height: 48px; }
-    .divider { text-align: center; margin: 20px 0; color: var(--aex-muted); font-size: 13px; }
     .theme-corner { position:fixed; top:16px; right:16px; }
   </style>
 </head>
@@ -22,24 +21,22 @@
   <div class="login-box">
     <div class="login-logo">
       <img src="/assets/aex-logo.png" alt="AEX Air Automotive" onerror="this.style.display='none'">
-      <p style="font-size:22px;font-weight:700;margin-top:8px">AEX Air Automotive</p>
-      <p class="text-muted" style="margin-top:4px">Área do Cliente</p>
+      <p style="font-size:20px;font-weight:700;margin-top:8px">Acesso Administrativo</p>
+      <p class="text-muted" style="margin-top:4px;font-size:13px">AEX Air Automotive</p>
     </div>
 
     <div class="card">
-      <form id="form-login">
+      <form id="form-admin">
         <div class="form-group">
           <label>Email</label>
-          <input type="email" id="email" placeholder="seu@email.com.br" required autocomplete="username">
+          <input type="email" id="admin-email" placeholder="admin@aex.com.br" required autocomplete="username">
         </div>
         <div class="form-group">
           <label>Senha</label>
-          <input type="password" id="senha" placeholder="••••••••" required autocomplete="current-password">
+          <input type="password" id="admin-senha" placeholder="••••••••" required autocomplete="current-password">
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%" id="btn-login">Entrar</button>
+        <button type="submit" class="btn btn-primary" style="width:100%" id="btn-admin">Entrar</button>
       </form>
-      <div class="divider">Não tem conta?</div>
-      <a href="/cadastro" class="btn btn-secondary" style="width:100%;justify-content:center">Cadastre-se</a>
     </div>
   </div>
 
@@ -53,9 +50,6 @@
       localStorage.setItem('aex-theme', next);
     }
 
-    const params   = new URLSearchParams(location.search);
-    const redirect = params.get('next') || '/';
-
     function toast(msg, err) {
       const el = document.getElementById('aex-toast');
       el.textContent = msg;
@@ -64,34 +58,28 @@
       el._t = setTimeout(() => el.className = '', 3500);
     }
 
-    document.getElementById('form-login').addEventListener('submit', async e => {
+    document.getElementById('form-admin').addEventListener('submit', async e => {
       e.preventDefault();
-      const btn = document.getElementById('btn-login');
+      const btn = document.getElementById('btn-admin');
       btn.disabled = true; btn.textContent = 'Entrando...';
       try {
-        const r = await fetch('/api/auth/login', {
+        const r = await fetch('/api/auth/admin/login', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            email: document.getElementById('email').value,
-            senha: document.getElementById('senha').value,
+            email: document.getElementById('admin-email').value,
+            senha: document.getElementById('admin-senha').value,
           }),
         });
         const d = await r.json();
         if (!r.ok) { toast(d.error, true); btn.disabled = false; btn.textContent = 'Entrar'; return; }
-        if (d.cliente.status === 'pendente') {
-          toast('Cadastro pendente de aprovação. Aguarde.', true);
-          btn.disabled = false; btn.textContent = 'Entrar'; return;
-        }
-        location.href = redirect;
+        location.href = '/admin';
       } catch { toast('Erro de conexão.', true); btn.disabled = false; btn.textContent = 'Entrar'; }
     });
 
-    // Redirecionar se já logado
+    // Redirecionar se já logado como admin
     fetch('/api/auth/me').then(r => r.ok && r.json()).then(d => {
-      if (!d) return;
-      if (d.tipo === 'admin') { location.href = '/admin'; return; }
-      location.href = redirect;
+      if (d?.tipo === 'admin') location.href = '/admin';
     });
   </script>
 </body>

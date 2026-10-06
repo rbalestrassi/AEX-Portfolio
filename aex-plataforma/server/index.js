@@ -60,6 +60,7 @@ const pages = {
   '/pedido':        'pedido.html',
   '/meus-pedidos':  'meus-pedidos.html',
   '/admin':         'admin/index.html',
+  '/admin/login':   'admin/login.html',
   '/admin/pedidos': 'admin/pedidos.html',
   '/admin/clientes':'admin/clientes.html',
   '/admin/produtos':'admin/produtos.html',
