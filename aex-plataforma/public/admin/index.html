@@ -18,6 +18,9 @@
     .menu-card:hover { border-color: var(--aex-red); transform: translateY(-2px); }
     .menu-card .icon { font-size: 36px; }
     .badge-alert { background: var(--aex-red); color: #fff; border-radius: 20px; padding: 2px 8px; font-size: 11px; font-weight: 700; }
+    .sync-card { border-color: var(--aex-border); }
+    .sync-card.syncing { opacity: .7; pointer-events: none; }
+    .sync-result { font-size: 12px; color: var(--aex-muted); margin-top: 6px; }
   </style>
 </head>
 <body>
@@ -74,10 +77,40 @@
         <strong>Clientes</strong>
         <span class="text-muted" id="menu-pendentes">Aprovar cadastros e descontos</span>
       </a>
+      <div class="card menu-card sync-card" id="syncCard" onclick="syncPlanilha()" style="cursor:pointer">
+        <div class="icon" id="syncIcon">🔄</div>
+        <strong>Sincronizar Planilha</strong>
+        <span class="text-muted">Atualizar produtos e preços do Google Sheets</span>
+        <span class="sync-result" id="syncResult"></span>
+      </div>
     </div>
   </div>
 
   <script>
+    async function syncPlanilha() {
+      const card = document.getElementById('syncCard');
+      const result = document.getElementById('syncResult');
+      const icon = document.getElementById('syncIcon');
+      card.classList.add('syncing');
+      icon.textContent = '⏳';
+      result.textContent = 'Sincronizando...';
+      try {
+        const r = await fetch('/api/admin/sync-produtos', { method: 'POST' });
+        const d = await r.json();
+        if (r.ok) {
+          result.textContent = `✓ ${d.sincronizados ?? d.updated ?? '?'} produtos atualizados`;
+          icon.textContent = '✅';
+        } else {
+          result.textContent = `Erro: ${d.error || 'Falha na sincronização'}`;
+          icon.textContent = '❌';
+        }
+      } catch {
+        result.textContent = 'Erro de conexão';
+        icon.textContent = '❌';
+      }
+      card.classList.remove('syncing');
+    }
+
     async function logout() {
       await fetch('/api/auth/logout', { method: 'POST' });
       location.href = '/admin/login';
