@@ -31,6 +31,8 @@
     .prod-card:hover { border-color:var(--aex-red); transform:translateY(-2px); }
     .prod-img { position:relative; aspect-ratio:4/3; overflow:hidden; background:#111; }
     .prod-img img { width:100%; height:100%; object-fit:cover; }
+    .img-count-badge { position:absolute; bottom:8px; right:8px; background:rgba(0,0,0,.55); color:#fff; font-size:11px; font-weight:600; padding:3px 7px; border-radius:10px; display:flex; align-items:center; gap:4px; pointer-events:none; }
+    .img-count-badge svg { width:12px; height:12px; fill:none; stroke:#fff; stroke-width:2; }
     .prod-body { padding:14px; }
     .prod-code { font-size:11px; color:var(--aex-muted); margin-bottom:4px; }
     .prod-name { font-size:14px; font-weight:600; line-height:1.3; margin-bottom:8px; }
@@ -333,6 +335,17 @@
       return m ? `/img/${m[1]}` : url;
     }
 
+    function getAllProductImgs(p) {
+      const stored = typeof p.imagens === 'string' ? JSON.parse(p.imagens || '[]') : (p.imagens || []);
+      const base = stored[0] || p.imagem || '';
+      const m = base.match(/(AEX-?\d+)/i);
+      if (!m) return stored.map(u => proxyImg(u)).filter(Boolean);
+      const code = m[1].toUpperCase();
+      const urls = [];
+      for (let i = 1; i <= 6; i++) urls.push(`/img/${code}-${String(i).padStart(2,'0')}.png`);
+      return urls;
+    }
+
     function fmtBRL(v) {
       return 'R$ ' + parseFloat(v).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
@@ -568,10 +581,12 @@
         const img = proxyImg(rawImg);
         const linhaLabel = LINE_LABELS[p.linha] || p.linha;
         const already = inCart(p.codigo);
+        const hasMulti = rawImg.match(/AEX-?\d+/i);
         return `
           <div class="prod-card" onclick="openModal(${p.id})">
             <div class="prod-img">
               <img src="${esc(img)}" alt="${esc(p.nome)}" loading="lazy" onerror="this.style.display='none'">
+              ${hasMulti ? `<div class="img-count-badge"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="15" height="12" rx="2"/><circle cx="10.5" cy="11" r="2.5"/><path d="M17 8h3v10H7v-2"/></svg>fotos</div>` : ''}
             </div>
             <div class="prod-body">
               <div class="prod-line">${esc(linhaLabel)}</div>
@@ -647,20 +662,22 @@
         specsEl.appendChild(div);
       });
 
-      // Imagens — usa dataset para evitar escape de src no onclick
+      // Imagens — gera todas as URLs possíveis e filtra as que carregam
+      const allImgs = getAllProductImgs(p);
       const img = document.getElementById('m-img');
-      img.src = proxyImg(imagens[0] || p.imagem || '');
+      img.src = allImgs[0] || '';
       const thumbs = document.getElementById('m-thumbs');
       thumbs.innerHTML = '';
-      imagens.forEach((src, i) => {
+      thumbs.hidden = false;
+      allImgs.forEach((src, i) => {
         const t = document.createElement('img');
-        t.src = proxyImg(src);
+        t.src = src;
         t.loading = 'lazy';
         if (i === 0) t.classList.add('active');
-        t.addEventListener('click', () => setImg(proxyImg(src), t));
+        t.onerror = () => t.remove();
+        t.addEventListener('click', () => setImg(src, t));
         thumbs.appendChild(t);
       });
-      thumbs.hidden = imagens.length <= 1;
 
       // Preço no modal
       const mPreco = document.getElementById('m-preco');
