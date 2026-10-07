@@ -71,7 +71,7 @@
 
       <div class="cnpj-row">
         <div class="form-group">
-          <label>CNPJ ou CPF *</label>
+          <label>CNPJ *</label>
           <input type="text" id="nc-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCnpj(this)">
         </div>
         <button class="btn btn-secondary btn-sm" style="margin-bottom:1px" onclick="buscarCnpj()">Buscar</button>
@@ -263,18 +263,10 @@
 
     function maskCnpj(el) {
       let v = el.value.replace(/\D/g, '').slice(0, 14);
-      if (v.length <= 11) {
-        if (v.length > 9) v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
-        else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{3})/, '$1.$2.$3');
-        else if (v.length > 3) v = v.replace(/^(\d{3})(\d{3})/, '$1.$2');
-        el.maxLength = 14;
-      } else {
-        if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
-        else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})/, '$1.$2.$3/$4');
-        else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{3})/, '$1.$2.$3');
-        else if (v.length > 2) v = v.replace(/^(\d{2})(\d{3})/, '$1.$2');
-        el.maxLength = 18;
-      }
+      if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+      else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})/, '$1.$2.$3/$4');
+      else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{3})/, '$1.$2.$3');
+      else if (v.length > 2) v = v.replace(/^(\d{2})(\d{3})/, '$1.$2');
       el.value = v;
     }
 
@@ -309,6 +301,9 @@
 
       if (!cnpj || !razao || !responsavel || !whatsapp || !email) {
         toast('Preencha todos os campos obrigatórios.', true); return;
+      }
+      if (cnpj.replace(/\D/g, '').length !== 14) {
+        toast('CNPJ inválido. Digite todos os 14 dígitos.', true); return;
       }
 
       const btn = document.getElementById('btn-criar');

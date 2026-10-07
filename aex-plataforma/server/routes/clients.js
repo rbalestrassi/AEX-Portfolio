@@ -26,6 +26,9 @@ router.post('/', requireGestor, async (req, res) => {
   if (!cnpj || !razao_social || !responsavel || !whatsapp || !email) {
     return res.status(400).json({ error: 'Preencha todos os campos obrigatórios.' });
   }
+  if (cnpj.replace(/\D/g, '').length !== 14) {
+    return res.status(400).json({ error: 'CNPJ inválido. Informe todos os 14 dígitos.' });
+  }
   try {
     const existe = await pool.query(
       'SELECT id FROM clientes WHERE email = $1 OR cnpj = $2',
