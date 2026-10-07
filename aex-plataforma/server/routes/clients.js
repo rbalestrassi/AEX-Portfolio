@@ -1,13 +1,22 @@
 const express  = require('express');
 const bcrypt   = require('bcryptjs');
+const crypto   = require('crypto');
 const pool     = require('../db');
 const { requireAdmin, requireGestor, requireClient } = require('../middleware/auth');
 const router   = express.Router();
 
 function gerarSenhaTemp() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  const len = 8;
   let s = 'AEX@';
-  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  const bytes = crypto.randomBytes(len * 2);
+  let i = 0;
+  while (s.length - 4 < len) {
+    const b = bytes[i++];
+    if (b < chars.length * Math.floor(256 / chars.length)) {
+      s += chars[b % chars.length];
+    }
+  }
   return s;
 }
 
