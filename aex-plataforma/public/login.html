@@ -13,8 +13,11 @@
     .login-box { width: 100%; max-width: 400px; padding: 16px; }
     .login-logo { text-align: center; margin-bottom: 32px; }
     .login-logo img { height: 48px; }
-    .divider { text-align: center; margin: 20px 0; color: var(--aex-muted); font-size: 13px; }
     .theme-corner { position:fixed; top:16px; right:16px; }
+    .forgot-link { display:block; text-align:center; margin-top:14px; font-size:13px; color:var(--aex-muted); cursor:pointer; }
+    .forgot-link:hover { color:var(--aex-text); }
+    .forgot-panel { display:none; margin-top:16px; padding:16px; background:var(--aex-bg); border:1px solid var(--aex-border); border-radius:var(--radius); font-size:13px; }
+    .forgot-panel.open { display:block; }
   </style>
 </head>
 <body>
@@ -38,8 +41,13 @@
         </div>
         <button type="submit" class="btn btn-primary" style="width:100%" id="btn-login">Entrar</button>
       </form>
-      <div class="divider">Não tem conta?</div>
-      <a href="/cadastro" class="btn btn-secondary" style="width:100%;justify-content:center">Cadastre-se</a>
+    </div>
+
+    <span class="forgot-link" onclick="toggleForgot()">Esqueceu sua senha?</span>
+    <div class="forgot-panel" id="forgot-panel">
+      <p style="margin:0 0 8px">Para recuperar o acesso, entre em contato com a AEX:</p>
+      <p style="margin:0"><strong>📱 WhatsApp:</strong> <a href="https://wa.me/5511999999999" target="_blank" rel="noopener">(11) 99999-9999</a></p>
+      <p style="margin:6px 0 0"><strong>📧 Email:</strong> <a href="mailto:contato@aexautomotive.com.br">contato@aexautomotive.com.br</a></p>
     </div>
   </div>
 
@@ -51,6 +59,10 @@
       const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
       html.setAttribute('data-theme', next);
       localStorage.setItem('aex-theme', next);
+    }
+
+    function toggleForgot() {
+      document.getElementById('forgot-panel').classList.toggle('open');
     }
 
     const params   = new URLSearchParams(location.search);
@@ -79,15 +91,14 @@
         });
         const d = await r.json();
         if (!r.ok) { toast(d.error, true); btn.disabled = false; btn.textContent = 'Entrar'; return; }
-        if (d.cliente.status === 'pendente') {
-          toast('Cadastro pendente de aprovação. Aguarde.', true);
+        if (d.cliente.status === 'bloqueado') {
+          toast('Acesso bloqueado. Entre em contato com a AEX.', true);
           btn.disabled = false; btn.textContent = 'Entrar'; return;
         }
         location.href = redirect;
       } catch { toast('Erro de conexão.', true); btn.disabled = false; btn.textContent = 'Entrar'; }
     });
 
-    // Redirecionar se já logado
     fetch('/api/auth/me').then(r => r.ok && r.json()).then(d => {
       if (!d) return;
       if (d.tipo === 'admin') { location.href = '/admin'; return; }

@@ -181,6 +181,7 @@
       <span id="nav-cart-total" onclick="location.href='/pedido'">🛒 <span id="nav-cart-value">R$ 0,00</span></span>
       <a href="/meus-pedidos" id="link-pedidos" hidden>Meus Pedidos</a>
       <a href="/login" id="link-login">Entrar</a>
+      <button id="btn-senha" class="btn btn-ghost btn-sm" onclick="abrirAlterarSenha()" hidden>🔑 Senha</button>
       <button id="btn-logout" class="btn btn-ghost btn-sm" onclick="logout()" hidden>Sair</button>
       <button class="theme-toggle" onclick="toggleTheme()" title="Alternar tema"></button>
     </div>
@@ -309,6 +310,29 @@
     </div>
   </div>
 
+  <!-- Modal Alterar Senha -->
+  <div class="modal-overlay hidden" id="senha-modal" onclick="if(event.target===this)fecharAlterarSenha()">
+    <div class="modal-box" style="max-width:420px">
+      <button class="modal-close" onclick="fecharAlterarSenha()">✕</button>
+      <div class="modal-body">
+        <div class="modal-title" style="margin-bottom:20px">Alterar Senha</div>
+        <div class="form-group">
+          <label>Senha atual</label>
+          <input type="password" id="s-atual" placeholder="••••••••" autocomplete="current-password">
+        </div>
+        <div class="form-group">
+          <label>Nova senha</label>
+          <input type="password" id="s-nova" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+        </div>
+        <div class="form-group">
+          <label>Confirmar nova senha</label>
+          <input type="password" id="s-confirma" placeholder="••••••••" autocomplete="new-password">
+        </div>
+        <button class="btn btn-primary" style="width:100%" id="btn-alterar-senha" onclick="salvarSenha()">Alterar Senha</button>
+      </div>
+    </div>
+  </div>
+
   <div id="aex-toast"></div>
 
   <script>
@@ -373,10 +397,41 @@
       session = null; updateNav(); location.reload();
     }
 
+    function abrirAlterarSenha() {
+      ['s-atual','s-nova','s-confirma'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('senha-modal').classList.remove('hidden');
+    }
+    function fecharAlterarSenha() {
+      document.getElementById('senha-modal').classList.add('hidden');
+    }
+    async function salvarSenha() {
+      const atual    = document.getElementById('s-atual').value;
+      const nova     = document.getElementById('s-nova').value;
+      const confirma = document.getElementById('s-confirma').value;
+      if (!atual || !nova) { toast('Preencha todos os campos.', true); return; }
+      if (nova !== confirma) { toast('As senhas não coincidem.', true); return; }
+      if (nova.length < 6) { toast('A nova senha deve ter no mínimo 6 caracteres.', true); return; }
+      const btn = document.getElementById('btn-alterar-senha');
+      btn.disabled = true; btn.textContent = 'Salvando...';
+      try {
+        const r = await fetch('/api/clients/alterar-senha', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ senha_atual: atual, nova_senha: nova }),
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error, true); btn.disabled = false; btn.textContent = 'Alterar Senha'; return; }
+        toast('✅ Senha alterada com sucesso!');
+        fecharAlterarSenha();
+      } catch { toast('Erro de conexão.', true); }
+      btn.disabled = false; btn.textContent = 'Alterar Senha';
+    }
+
     function updateNav() {
       const isLogged = !!session;
       document.getElementById('link-login').hidden   = isLogged;
       document.getElementById('btn-logout').hidden   = !isLogged;
+      document.getElementById('btn-senha').hidden    = !isLogged;
       document.getElementById('link-pedidos').hidden = !isLogged;
       document.getElementById('btn-cad-hero').hidden = isLogged;
       document.getElementById('btn-login-hero').hidden = isLogged;

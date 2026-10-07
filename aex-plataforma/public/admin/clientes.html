@@ -18,6 +18,19 @@
     .filter-btn { padding:6px 14px;border-radius:20px;border:1px solid var(--aex-border);background:transparent;color:var(--aex-muted);cursor:pointer;font-size:13px;transition:.2s; }
     .filter-btn.active { background:var(--aex-red);color:#fff;border-color:var(--aex-red); }
     .cli-info { font-size:13px;color:var(--aex-muted);margin-top:6px; }
+
+    /* Modal */
+    .modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100;display:none;align-items:center;justify-content:center;padding:16px; }
+    .modal-overlay.open { display:flex; }
+    .modal-box { background:var(--aex-card);border:1px solid var(--aex-border);border-radius:var(--radius);padding:28px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto; }
+    .modal-title { font-size:18px;font-weight:700;margin-bottom:20px; }
+    .modal-footer { display:flex;gap:8px;margin-top:20px;justify-content:flex-end; }
+    .cnpj-row { display:flex;gap:8px;align-items:flex-end; }
+    .cnpj-row .form-group { flex:1;margin-bottom:0; }
+    .senha-box { margin-top:16px;padding:14px;background:var(--aex-bg);border:1px solid var(--aex-border);border-radius:var(--radius);display:none; }
+    .senha-box.show { display:block; }
+    .senha-value { font-size:20px;font-weight:700;letter-spacing:2px;color:var(--aex-text);margin:6px 0; }
+    .copy-btn { font-size:12px;padding:4px 10px; }
   </style>
 </head>
 <body>
@@ -34,7 +47,10 @@
   <div class="container">
     <div class="flex items-center justify-between mb-6">
       <h1 class="page-title" style="margin:0">Clientes</h1>
-      <button class="btn btn-secondary btn-sm" onclick="load()">↻ Atualizar</button>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-secondary btn-sm" onclick="load()">↻ Atualizar</button>
+        <button class="btn btn-primary btn-sm" id="btn-novo" hidden onclick="abrirModal()">+ Novo Cliente</button>
+      </div>
     </div>
 
     <div class="filter-row">
@@ -48,14 +64,66 @@
     <div id="list"></div>
   </div>
 
+  <!-- Modal Novo Cliente -->
+  <div class="modal-overlay" id="modal" onclick="fecharModalOutside(event)">
+    <div class="modal-box">
+      <div class="modal-title">Novo Cliente</div>
+
+      <div class="cnpj-row">
+        <div class="form-group">
+          <label>CNPJ ou CPF *</label>
+          <input type="text" id="nc-cnpj" placeholder="00.000.000/0001-00" maxlength="18" oninput="maskCnpj(this)">
+        </div>
+        <button class="btn btn-secondary btn-sm" style="margin-bottom:1px" onclick="buscarCnpj()">Buscar</button>
+      </div>
+
+      <div id="cnpj-buscando" style="font-size:13px;color:var(--aex-muted);margin-top:6px;display:none">Consultando Receita Federal...</div>
+
+      <div class="form-group" style="margin-top:14px">
+        <label>Razão Social *</label>
+        <input type="text" id="nc-razao" placeholder="Nome empresarial">
+      </div>
+      <div class="form-group">
+        <label>Nome Fantasia</label>
+        <input type="text" id="nc-fantasia" placeholder="Nome de fantasia (opcional)">
+      </div>
+      <div class="form-group">
+        <label>Responsável *</label>
+        <input type="text" id="nc-responsavel" placeholder="Nome do contato">
+      </div>
+      <div class="form-group">
+        <label>WhatsApp *</label>
+        <input type="tel" id="nc-whatsapp" placeholder="55 11 99999-9999">
+      </div>
+      <div class="form-group">
+        <label>Email *</label>
+        <input type="email" id="nc-email" placeholder="email@empresa.com.br">
+      </div>
+      <div class="form-group">
+        <label>Desconto inicial %</label>
+        <input type="number" id="nc-desconto" value="0" min="0" max="100" step="0.5" style="width:100px">
+      </div>
+
+      <div class="senha-box" id="senha-box">
+        <div style="font-size:13px;color:var(--aex-muted)">✅ Cliente criado! Senha temporária:</div>
+        <div class="senha-value" id="senha-value"></div>
+        <button class="btn btn-secondary copy-btn" onclick="copiarSenha()">Copiar</button>
+        <div style="font-size:12px;color:var(--aex-muted);margin-top:8px">Passe essa senha para o cliente. Ele poderá alterá-la após o primeiro acesso.</div>
+      </div>
+
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="fecharModal()">Fechar</button>
+        <button class="btn btn-primary" id="btn-criar" onclick="criarCliente()">Criar Cliente</button>
+      </div>
+    </div>
+  </div>
+
   <div id="aex-toast"></div>
 
   <script>
-    // Escapa HTML para prevenir XSS em innerHTML
     const esc = s => String(s ?? '').replace(/[&<>"']/g, c =>
       ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])
     );
-    // Valida que um valor é inteiro (para uso em onclick)
     const safeId = n => Number.isInteger(Number(n)) ? Number(n) : 0;
 
     let clientes = [];
@@ -82,9 +150,9 @@
       const vis = filtro === 'todos' ? clientes : clientes.filter(c => c.status === filtro);
       if (!vis.length) { document.getElementById('list').innerHTML = '<p style="color:var(--aex-muted);padding:24px">Nenhum cliente.</p>'; return; }
 
+      const isGestor = nivel === 'gestor';
       document.getElementById('list').innerHTML = vis.map(c => {
         const data = new Date(c.criado_em).toLocaleDateString('pt-BR');
-        const isGestor = nivel === 'gestor';
         const cid = safeId(c.id);
         const statusSafe = ['pendente','aprovado','bloqueado'].includes(c.status) ? c.status : 'pendente';
         const descNum = parseFloat(c.desconto_percentual) || 0;
@@ -106,6 +174,7 @@
                 ${statusSafe !== 'aprovado'  ? `<button class="btn btn-sm" style="background:#002a10;color:var(--aex-success);border:none" onclick="updateStatus(${cid},'aprovado')">✅ Aprovar</button>` : ''}
                 ${statusSafe !== 'bloqueado' ? `<button class="btn btn-sm" style="background:#2a0008;color:#f87171;border:none" onclick="updateStatus(${cid},'bloqueado')">🚫 Bloquear</button>` : ''}
                 ${statusSafe !== 'pendente'  ? `<button class="btn btn-sm btn-ghost" onclick="updateStatus(${cid},'pendente')">⏳ Pendente</button>` : ''}
+                <button class="btn btn-sm btn-ghost" onclick="resetarSenha(${cid})">🔑 Resetar senha</button>
 
                 <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
                   <label style="font-size:13px;color:var(--aex-muted)">Desconto %:</label>
@@ -152,6 +221,16 @@
       } catch { toast('Erro.', true); }
     }
 
+    async function resetarSenha(id) {
+      if (!confirm('Resetar a senha deste cliente? Uma nova senha temporária será gerada.')) return;
+      try {
+        const r = await fetch(`/api/clients/${id}/resetar-senha`, { method: 'POST' });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error, true); return; }
+        prompt('Nova senha temporária (copie agora):', d.senha_temp);
+      } catch { toast('Erro.', true); }
+    }
+
     async function load() {
       try {
         const r = await fetch('/api/clients');
@@ -162,9 +241,103 @@
       } catch { document.getElementById('loading').textContent = 'Erro ao carregar.'; }
     }
 
+    // Modal Novo Cliente
+    function abrirModal() {
+      document.getElementById('modal').classList.add('open');
+      document.getElementById('senha-box').classList.remove('show');
+      document.getElementById('btn-criar').hidden = false;
+      ['nc-cnpj','nc-razao','nc-fantasia','nc-responsavel','nc-whatsapp','nc-email'].forEach(id => {
+        document.getElementById(id).value = '';
+      });
+      document.getElementById('nc-desconto').value = '0';
+    }
+
+    function fecharModal() {
+      document.getElementById('modal').classList.remove('open');
+      load();
+    }
+
+    function fecharModalOutside(e) {
+      if (e.target === document.getElementById('modal')) fecharModal();
+    }
+
+    function maskCnpj(el) {
+      let v = el.value.replace(/\D/g, '').slice(0, 14);
+      if (v.length <= 11) {
+        if (v.length > 9) v = v.replace(/^(\d{3})(\d{3})(\d{3})(\d{2})$/, '$1.$2.$3-$4');
+        else if (v.length > 6) v = v.replace(/^(\d{3})(\d{3})(\d{3})/, '$1.$2.$3');
+        else if (v.length > 3) v = v.replace(/^(\d{3})(\d{3})/, '$1.$2');
+        el.maxLength = 14;
+      } else {
+        if (v.length > 12) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, '$1.$2.$3/$4-$5');
+        else if (v.length > 8) v = v.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})/, '$1.$2.$3/$4');
+        else if (v.length > 5) v = v.replace(/^(\d{2})(\d{3})(\d{3})/, '$1.$2.$3');
+        else if (v.length > 2) v = v.replace(/^(\d{2})(\d{3})/, '$1.$2');
+        el.maxLength = 18;
+      }
+      el.value = v;
+    }
+
+    async function buscarCnpj() {
+      const cnpj = document.getElementById('nc-cnpj').value.replace(/\D/g, '');
+      if (cnpj.length !== 14) { toast('Digite um CNPJ válido (14 dígitos).', true); return; }
+      const status = document.getElementById('cnpj-buscando');
+      status.style.display = 'block';
+      try {
+        const r = await fetch(`https://brasilapi.com.br/api/cnpj/v1/${cnpj}`);
+        if (!r.ok) { toast('CNPJ não encontrado na Receita Federal.', true); status.style.display = 'none'; return; }
+        const d = await r.json();
+        document.getElementById('nc-razao').value    = d.razao_social || '';
+        document.getElementById('nc-fantasia').value = d.nome_fantasia || '';
+        if (d.ddd_telefone_1) {
+          document.getElementById('nc-whatsapp').value = '55' + d.ddd_telefone_1.replace(/\D/g, '');
+        }
+        if (d.email) document.getElementById('nc-email').value = d.email;
+        toast('✓ Dados preenchidos automaticamente');
+      } catch { toast('Erro ao consultar Receita Federal.', true); }
+      status.style.display = 'none';
+    }
+
+    async function criarCliente() {
+      const cnpj       = document.getElementById('nc-cnpj').value.trim();
+      const razao      = document.getElementById('nc-razao').value.trim();
+      const fantasia   = document.getElementById('nc-fantasia').value.trim();
+      const responsavel= document.getElementById('nc-responsavel').value.trim();
+      const whatsapp   = document.getElementById('nc-whatsapp').value.trim();
+      const email      = document.getElementById('nc-email').value.trim();
+      const desconto   = document.getElementById('nc-desconto').value;
+
+      if (!cnpj || !razao || !responsavel || !whatsapp || !email) {
+        toast('Preencha todos os campos obrigatórios.', true); return;
+      }
+
+      const btn = document.getElementById('btn-criar');
+      btn.disabled = true; btn.textContent = 'Criando...';
+
+      try {
+        const r = await fetch('/api/clients', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cnpj, razao_social: razao, nome_fantasia: fantasia, responsavel, whatsapp, email, desconto }),
+        });
+        const d = await r.json();
+        if (!r.ok) { toast(d.error, true); btn.disabled = false; btn.textContent = 'Criar Cliente'; return; }
+
+        document.getElementById('senha-value').textContent = d.senha_temp;
+        document.getElementById('senha-box').classList.add('show');
+        btn.hidden = true;
+      } catch { toast('Erro de conexão.', true); btn.disabled = false; btn.textContent = 'Criar Cliente'; }
+    }
+
+    function copiarSenha() {
+      const s = document.getElementById('senha-value').textContent;
+      navigator.clipboard.writeText(s).then(() => toast('Senha copiada!')).catch(() => toast('Copie manualmente: ' + s));
+    }
+
     fetch('/api/auth/me').then(r => r.ok ? r.json() : null).then(d => {
       if (!d || d.tipo !== 'admin') { location.href = '/admin/login'; return; }
       nivel = d.nivel;
+      if (nivel === 'gestor') document.getElementById('btn-novo').hidden = false;
       load();
     });
 

@@ -1,7 +1,48 @@
 const express  = require('express');
+const bcrypt   = require('bcryptjs');
 const pool     = require('../db');
-const { requireAdmin, requireGestor } = require('../middleware/auth');
+const { requireAdmin, requireGestor, requireClient } = require('../middleware/auth');
 const router   = express.Router();
+
+function gerarSenhaTemp() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let s = 'AEX@';
+  for (let i = 0; i < 5; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+// POST /api/clients — criar cliente (gestor)
+router.post('/', requireGestor, async (req, res) => {
+  const { cnpj, razao_social, nome_fantasia, responsavel, whatsapp, email, desconto } = req.body;
+  if (!cnpj || !razao_social || !responsavel || !whatsapp || !email) {
+    return res.status(400).json({ error: 'Preencha todos os campos obrigatórios.' });
+  }
+  try {
+    const existe = await pool.query(
+      'SELECT id FROM clientes WHERE email = $1 OR cnpj = $2',
+      [email, cnpj]
+    );
+    if (existe.rows.length > 0) {
+      return res.status(409).json({ error: 'Email ou CNPJ já cadastrado.' });
+    }
+
+    const senhaTemp = gerarSenhaTemp();
+    const hash = await bcrypt.hash(senhaTemp, 12);
+    const desc = parseFloat(desconto) || 0;
+
+    const r = await pool.query(
+      `INSERT INTO clientes (cnpj, razao_social, nome_fantasia, responsavel, whatsapp, email, senha_hash, status, desconto_percentual, aprovado_por, aprovado_em)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, 'aprovado', $8, $9, NOW())
+       RETURNING id, cnpj, razao_social, responsavel, email, whatsapp, status, desconto_percentual, criado_em`,
+      [cnpj, razao_social, nome_fantasia || null, responsavel, whatsapp, email, hash, desc, req.session.admin.id]
+    );
+
+    res.status(201).json({ ok: true, cliente: r.rows[0], senha_temp: senhaTemp });
+  } catch (err) {
+    console.error('[CLIENTS] criar erro:', err.message);
+    res.status(500).json({ error: 'Erro ao criar cliente.' });
+  }
+});
 
 // GET /api/clients — lista clientes (admin operacional: só aprovados; gestor: todos)
 router.get('/', requireAdmin, async (req, res) => {
@@ -52,6 +93,47 @@ router.patch('/:id/desconto', requireGestor, async (req, res) => {
     res.json({ ok: true, cliente: r.rows[0] });
   } catch (err) {
     res.status(500).json({ error: 'Erro ao aplicar desconto.' });
+  }
+});
+
+// POST /api/clients/:id/resetar-senha — gera nova senha temporária (gestor)
+router.post('/:id/resetar-senha', requireGestor, async (req, res) => {
+  try {
+    const existe = await pool.query('SELECT id FROM clientes WHERE id = $1', [req.params.id]);
+    if (!existe.rows[0]) return res.status(404).json({ error: 'Cliente não encontrado.' });
+
+    const senhaTemp = gerarSenhaTemp();
+    const hash = await bcrypt.hash(senhaTemp, 12);
+    await pool.query('UPDATE clientes SET senha_hash = $1 WHERE id = $2', [hash, req.params.id]);
+
+    res.json({ ok: true, senha_temp: senhaTemp });
+  } catch (err) {
+    console.error('[CLIENTS] reset senha erro:', err.message);
+    res.status(500).json({ error: 'Erro ao resetar senha.' });
+  }
+});
+
+// POST /api/clients/alterar-senha — cliente altera a própria senha
+router.post('/alterar-senha', requireClient, async (req, res) => {
+  const { senha_atual, nova_senha } = req.body;
+  if (!senha_atual || !nova_senha) {
+    return res.status(400).json({ error: 'Informe a senha atual e a nova senha.' });
+  }
+  if (nova_senha.length < 6) {
+    return res.status(400).json({ error: 'A nova senha deve ter no mínimo 6 caracteres.' });
+  }
+  try {
+    const r = await pool.query('SELECT senha_hash FROM clientes WHERE id = $1', [req.session.cliente.id]);
+    const ok = await bcrypt.compare(senha_atual, r.rows[0].senha_hash);
+    if (!ok) return res.status(401).json({ error: 'Senha atual incorreta.' });
+
+    const hash = await bcrypt.hash(nova_senha, 12);
+    await pool.query('UPDATE clientes SET senha_hash = $1 WHERE id = $2', [hash, req.session.cliente.id]);
+
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('[CLIENTS] alterar senha erro:', err.message);
+    res.status(500).json({ error: 'Erro ao alterar senha.' });
   }
 });
 
