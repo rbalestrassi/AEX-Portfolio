@@ -64,6 +64,7 @@ const pages = {
   '/admin/pedidos': 'admin/pedidos.html',
   '/admin/clientes':'admin/clientes.html',
   '/admin/produtos':'admin/produtos.html',
+  '/minha-conta':   'minha-conta.html',
 };
 Object.entries(pages).forEach(([route, file]) => {
   app.get(route, (_, res) =>
