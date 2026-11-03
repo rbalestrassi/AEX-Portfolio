@@ -458,6 +458,14 @@ body.header-compact .logo-area img { height:56px !important; }
   cursor:pointer; font-size:15px; transition:all .2s;
 }
 .modal-close:hover { color:var(--white); border-color:var(--gray); }
+.modal-share-btn {
+  position:absolute; top:14px; right:56px; z-index:10;
+  background:rgba(26,26,26,.9); border:1px solid var(--border2); color:var(--gray);
+  width:34px; height:34px; display:flex; align-items:center; justify-content:center;
+  cursor:pointer; transition:all .2s;
+}
+.modal-share-btn:hover { color:var(--white); border-color:var(--gray); }
+.modal-share-btn svg { width:16px; height:16px; }
 .modal-hero { display:grid; grid-template-columns:1fr 1fr; }
 @media(min-width:769px){ .modal-img-wrap { aspect-ratio:1080/692; } }
 .modal-img-wrap {
@@ -894,6 +902,9 @@ body.header-compact .logo-area img { height:56px !important; }
 <div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
   <div class="modal" id="modal">
     <button class="modal-close" onclick="closeModal()">✕</button>
+    <button class="modal-share-btn" onclick="shareProduct()" title="Compartilhar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+    </button>
 
     <div class="modal-hero">
       <div class="modal-img-wrap" id="modalImg"></div>
@@ -1860,9 +1871,23 @@ function openModal(id){
 
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow='hidden';
+  history.replaceState(null,'',location.pathname+'?p='+encodeURIComponent(id));
 }
-function closeModal(){ document.getElementById('modalOverlay').classList.remove('open'); document.body.style.overflow=''; }
+function closeModal(){
+  document.getElementById('modalOverlay').classList.remove('open');
+  document.body.style.overflow='';
+  history.replaceState(null,'',location.pathname);
+}
 function closeModalOutside(e){ if(e.target===document.getElementById('modalOverlay'))closeModal(); }
+function shareProduct(){
+  const url=location.href;
+  if(navigator.share){
+    const title=document.getElementById('modalTitle').textContent;
+    navigator.share({title:'Compressor AEX — '+title,url}).catch(()=>{});
+  } else {
+    navigator.clipboard.writeText(url).then(()=>showToast('Link copiado!')).catch(()=>showToast('Copie: '+url));
+  }
+}
 
 // ── ADMIN ────────────────────────────────────────────────────────────────
 function openAdmin(){ document.getElementById('adminOverlay').classList.add('open'); document.body.style.overflow='hidden'; document.getElementById('adminLogin').style.display='block'; document.getElementById('adminDash').style.display='none'; document.getElementById('loginErr').style.display='none'; document.getElementById('adminPwd').value=''; setTimeout(()=>document.getElementById('adminPwd').focus(),100); }
@@ -2239,7 +2264,7 @@ function initPremiumMotion(){
 }
 
 function forceInitialHeroTop(){
-  if(location.hash&&location.protocol!=='file:') history.replaceState(null,'',location.pathname+location.search);
+  if(location.hash&&location.protocol!=='file:'&&!new URLSearchParams(location.search).get('p')) history.replaceState(null,'',location.pathname+location.search);
   const goTop=()=>window.scrollTo({top:0,left:0,behavior:'auto'});
   goTop();
   requestAnimationFrame(goTop);
@@ -2343,6 +2368,9 @@ syncFromServer().finally(()=>{
   loadImages().catch(e=>console.warn('loadImages failed',e));
   loadHeroAssets().then(initPremiumMotion).catch(e=>console.error('Erro ao inicializar animações',e));
   initHeroLiquidEffect();
+  // Deep link: abre produto direto se ?p= estiver na URL
+  const pParam=new URLSearchParams(location.search).get('p');
+  if(pParam) setTimeout(()=>openModal(pParam),400);
 });
 
 // Inicializa links WhatsApp estáticos (header + hero + botão flutuante)
