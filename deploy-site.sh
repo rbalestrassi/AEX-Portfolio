@@ -12,6 +12,8 @@ CONTAINER=$(docker ps -q -f name=claudinho_aex)
 if [ -n "$CONTAINER" ]; then
   echo "==> Copiando site principal para container $CONTAINER..."
   docker cp "$REPO/site-aex-publicacao/." "$CONTAINER:/usr/share/nginx/html/"
+  docker cp "$REPO/site-aex-publicacao/nginx-site.conf" "$CONTAINER:/etc/nginx/conf.d/default.conf"
+  docker exec "$CONTAINER" nginx -s reload
   echo "    OK — aexautomotive.com.br atualizado"
 else
   echo "    AVISO: container claudinho_aex nao encontrado"
